@@ -44,6 +44,24 @@ model = None
 model_loaded = False
 model_loading = False
 recognizer = sr.Recognizer()
+use_mock_camera = True  # Set to True when deployed on Render or other server environments
+
+# Try to initialize the camera, fall back to mock if not available
+try:
+    cap = cv2.VideoCapture(0)
+    if cap.isOpened():
+        use_mock_camera = False
+        cap.release()  # We'll reopen it when needed
+    else:
+        print("Camera not available, using mock camera")
+except Exception as e:
+    print(f"Error accessing camera: {e}")
+    print("Using mock camera instead")
+
+# Create a mock frame for environments without a camera
+mock_frame = np.ones((480, 640, 3), dtype=np.uint8) * 255  # White background
+cv2.putText(mock_frame, "Camera not available", (120, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+cv2.putText(mock_frame, "Please use client-side camera", (80, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
 # Function to load the model in a separate thread
 def load_model_async():
@@ -79,29 +97,26 @@ word_to_number = {
     "ten": 10
 }
 
-# Open the camera with error handling
-try:
-    camera = cv2.VideoCapture(0)
-    camera_available = camera.isOpened()
-except Exception as e:
-    print(f"Camera initialization error: {e}")
-    camera = None
-    camera_available = False
-
 def generate_frames():
-    if not camera_available:
-        # Generate a static frame with an error message
-        frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        cv2.putText(frame, "Camera not available", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        
-        # Return a single static frame indefinitely
+    if use_mock_camera:
+        # Return the mock frame indefinitely
+        ret, buffer = cv2.imencode('.jpg', mock_frame)
+        frame_bytes = buffer.tobytes()
         while True:
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
     else:
         # Normal camera operation
+        camera = cv2.VideoCapture(0)  # Open the camera when needed
+        if not camera.isOpened():
+            # Fallback to mock if camera fails to open
+            ret, buffer = cv2.imencode('.jpg', mock_frame)
+            frame_bytes = buffer.tobytes()
+            while True:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        
+        # Continue with normal camera operation
         while True:
             success, frame = camera.read()
             if not success:
@@ -174,10 +189,10 @@ def predict():
         else:
             return jsonify({'status': 'error', 'message': 'Model failed to load'})
     
-    if not camera_available:
-        return jsonify({'status': 'error', 'message': 'Camera not available'})
+    if use_mock_camera:
+        return jsonify({'status': 'error', 'message': 'Camera not available in this environment'})
         
-    success, frame = camera.read()
+    success, frame = cap.read()
     if not success:
         return jsonify({'status': 'error', 'message': 'Failed to capture frame'})
     else:
@@ -315,10 +330,10 @@ def capture():
         else:
             return jsonify({'status': 'error', 'message': 'Model failed to load'})
     
-    if not camera_available:
+    if use_mock_camera:
         return jsonify({'error': 'Camera not available in this environment', 'image': '', 'prediction': 'No camera'})
     
-    success, frame = camera.read()
+    success, frame = cap.read()
     if not success:
         return jsonify({'error': 'Failed to capture image from camera'}), 500
     else:
@@ -389,7 +404,7 @@ def health_check():
         'status': 'up',
         'model_loaded': model_loaded,
         'model_loading': model_loading,
-        'camera_available': camera_available
+        'camera_available': not use_mock_camera
     })
 
 @app.route('/predict_image', methods=['POST'])

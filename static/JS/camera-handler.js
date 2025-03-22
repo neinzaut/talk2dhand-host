@@ -7,14 +7,26 @@ let mediaStream = null;
 
 // Initialize the camera when the page loads
 function initCamera() {
+    console.log("Initializing camera handler");
+    
     // Create or get the necessary HTML elements
     videoElement = document.getElementById('webcam') || createVideoElement();
     canvasElement = document.getElementById('canvas') || createCanvasElement();
     canvasContext = canvasElement.getContext('2d');
     
-    // Request camera access from the browser
+    // Request camera access from the browser with explicit constraints to force permission dialog
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
+        // Show a message that we're requesting access
+        updateStatus('Requesting camera access...', 'info');
+        
+        const constraints = {
+            video: {
+                width: { ideal: 320 },
+                height: { ideal: 240 }
+            }
+        };
+        
+        navigator.mediaDevices.getUserMedia(constraints)
             .then(stream => {
                 // Success - camera access granted
                 mediaStream = stream;
@@ -26,14 +38,24 @@ function initCamera() {
                 
                 // Add a status message
                 updateStatus('Camera connected', 'success');
+                console.log("Camera connected successfully");
             })
             .catch(error => {
                 // Error - camera access denied or not available
                 console.error('Camera error:', error);
-                updateStatus('Camera access denied or unavailable. Please allow camera access and reload the page.', 'error');
+                
+                if (error.name === 'NotAllowedError') {
+                    updateStatus('Camera access denied. Please allow camera access in your browser settings and reload the page.', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    updateStatus('No camera detected. Please connect a camera and reload the page.', 'error');
+                } else if (error.name === 'NotReadableError') {
+                    updateStatus('Camera is already in use by another application.', 'error');
+                } else {
+                    updateStatus('Camera error: ' + error.message, 'error');
+                }
             });
     } else {
-        updateStatus('Your browser does not support camera access', 'error');
+        updateStatus('Your browser does not support camera access. Please try using Chrome, Firefox, or Edge.', 'error');
     }
 }
 
@@ -166,9 +188,20 @@ function stopCamera() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, checking if camera is needed");
+    
     // Check if we're on a page that needs the camera
     const cameraContainer = document.getElementById('camera');
+    const webcamElement = document.getElementById('webcam');
+    
     if (cameraContainer) {
-        initCamera();
+        console.log("Camera container found, initializing camera");
+        
+        // Wait a short time to ensure all elements are properly loaded
+        setTimeout(() => {
+            initCamera();
+        }, 500);
+    } else {
+        console.log("No camera container found, skipping camera initialization");
     }
 }); 
