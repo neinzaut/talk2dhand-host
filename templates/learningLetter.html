@@ -10,6 +10,35 @@
     <title>Talk2DHand</title>
     <link rel="stylesheet" href="/static/css/popupInstructions.css" >
     <link rel="icon" href="/static/images/logo_notext.png" type="image/png">
+    <script src="/static/JS/camera-handler.js"></script>
+    <style>
+        /* Additional CSS for camera elements */
+        #webcam {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 10px;
+            border: 2px solid #304C89;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
 </head>
 
 <!-- NAVBAR -->
@@ -98,7 +127,8 @@
             </div>
             <p id="predictionText"></p>
             <div id="camera">
-                <img src="{{ url_for('video_feed') }}" id="videoFeed" alt="Video Feed">
+                <video id="webcam" autoplay></video>
+                <canvas id="canvas" style="display:none;"></canvas>
             </div>
         </div>
     </div>

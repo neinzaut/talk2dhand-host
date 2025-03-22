@@ -12,27 +12,30 @@ let elapsedSeconds = 0; // Variable to count the elapsed seconds
 let selectedIndex = -1; // Variable to store the index of the selected image
 const images = document.querySelectorAll('.gallery img');
 const selectedImageElement = document.getElementById('selectedImage');
+let predictionInterval = null; // Store the interval ID
 
-// Function to perform the prediction
+// Function to perform the prediction using client-side camera
 function predict() {
-    fetch('/predict')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(data => {
-            document.getElementById('predictionText').textContent = ` ${data}`;
+    // Use the sendImageForPrediction function from camera-handler.js
+    if (typeof sendImageForPrediction === 'function') {
+        sendImageForPrediction(function(data) {
+            if (data.status === 'success') {
+                document.getElementById('predictionText').textContent = ` ${data.prediction}`;
 
-            // If there is a selected image, start checking the match
-            if (selectedImage) {
-                checkPrediction(data);
+                // If there is a selected image, start checking the match
+                if (selectedImage) {
+                    checkPrediction(data.prediction);
+                }
+            } else if (data.status === 'loading') {
+                document.getElementById('predictionText').textContent = ' Model is loading...';
+            } else {
+                document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
             }
-        })
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
         });
+    } else {
+        console.error('Camera handler not loaded properly');
+        document.getElementById('predictionText').textContent = ' Camera unavailable';
+    }
 }
 
 // Function to update the timer
@@ -76,8 +79,12 @@ function checkPrediction(prediction) {
 
         // Update the border of the image in the gallery
         selectedImage.style.border = matchedBorders[selectedIndex];
-
-        clearInterval(timerInterval); // Stop the prediction after the match
+        
+        // Stop the prediction interval after the match
+        if (predictionInterval) {
+            clearInterval(predictionInterval);
+            predictionInterval = null;
+        }
     } else {
         if (isCorrect) {
             // If the last answer was correct, do not change the color
@@ -92,6 +99,13 @@ function selectImage(index) {
     // If there is a selected image, reset its border
     if (selectedImage) {
         selectedImage.style.border = ""; // Remove the black border
+        selectedImage.classList.remove('selected'); // Remove the selected class
+    }
+    
+    // If we had an active prediction interval, clear it
+    if (predictionInterval) {
+        clearInterval(predictionInterval);
+        predictionInterval = null;
     }
 
     selectedIndex = index; // Update the selected index
@@ -100,6 +114,7 @@ function selectImage(index) {
     if (selectedIndex >= 0 && selectedIndex < images.length) {
         selectedImage = images[selectedIndex]; // Set the selected image
         selectedImage.style.border = "5px solid black"; // Black border
+        selectedImage.classList.add('selected'); // Add the selected class
         selectedImageElement.src = selectedImage.src; // Copy the src of the selected image
         selectedImageElement.style.display = "block"; // Display the selected image
 
@@ -108,9 +123,14 @@ function selectImage(index) {
         const fileName = srcParts[srcParts.length - 1].split('.')[0];
         selectedLetter = fileName; // Update the selected letter
 
+        // Reset correctness state 
+        isCorrect = false;
+
         // Start the timer
         startTimer(); // Start the timer
-        setInterval(predict, 1000); // Call the predict function every second
+        
+        // Start predicting at regular intervals
+        predictionInterval = setInterval(predict, 1000); // Call the predict function every second
 
         // Update the borders of all images in the gallery
         images.forEach((img, i) => {
@@ -145,6 +165,13 @@ images.forEach(image => {
             selectedImage.style.border = ""; // Default border
             selectedImage = null;
             matchedBorders[selectedIndex] = ''; // Clear the matched border
+            
+            // Stop predictions
+            if (predictionInterval) {
+                clearInterval(predictionInterval);
+                predictionInterval = null;
+            }
+            
             return; // Exit the function
         }
 
@@ -155,80 +182,59 @@ images.forEach(image => {
 
 const intro = introJs();
 
-    intro.setOptions({
-        steps:[
-        {
-
-            element:document.querySelector('.gallery'),
-
-            intro: `
-                    <div>
-                        <p> Click on one sign to learn</p>
-                        <img src="/static/images/piselect.gif" alt="Example Image" class="intro-image">
-                    </div>
-                    `,
-                           position: 'right'
-        },
-        {
-
+intro.setOptions({
+    steps:[
+    {
+        element:document.querySelector('.gallery'),
+        intro: `
+                <div>
+                    <p> Click on one sign to learn</p>
+                    <img src="/static/images/piselect.gif" alt="Example Image" class="intro-image">
+                </div>
+                `,
+                       position: 'right'
+    },
+    {
         element:document.querySelector('#digitalTimer'),
         intro: `
-                    <div>
-                        <p> The timer will show you how long it took you to learn the letter.</p>
-                        <img src="/static/images/colors.png" alt="Example Image" class="intro-image" style="width:300px;">
-                    </div>
-                    `
-        },
-        {
+                <div>
+                    <p> The timer will show you how long it took you to learn the letter.</p>
+                    <img src="/static/images/colors.png" alt="Example Image" class="intro-image" style="width:300px;">
+                </div>
+                `
+    },
+    {
         element:document.querySelector('#camera'),
-        intro:
-        `
-                    <div>
-                        <p> Try to mimic its shape using the camera</p>
-                        <img src="/static/images/hand.png" alt="Example Image" class="intro-image" style="width:200px;">
-                    </div>
-                    `,position: 'left'
-        }
-
+        intro: `
+                <div>
+                    <p> Try to mimic its shape using the camera</p>
+                    <img src="/static/images/hand.png" alt="Example Image" class="intro-image" style="width:200px;">
+                </div>
+                `,
+        position: 'left'
+    }
     ],
-       tooltipClass: 'customTooltip'
-    })
-    document.querySelector('.start-steps').addEventListener('click', function() {
+    tooltipClass: 'customTooltip'
+});
 
-        intro.start();
-})
+document.querySelector('.start-steps').addEventListener('click', function() {
+    intro.start();
+});
 
-function selectImage(index) {
-    // If there is a selected image, reset its border
-    if (selectedImage) {
-        selectedImage.style.border = ""; // Remove the black border
-        selectedImage.classList.remove('selected'); // Remove the selected class
+// Make sure to initialize the camera when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if camera is available on this page
+    const cameraContainer = document.getElementById('camera');
+    if (cameraContainer) {
+        // Ensure the camera handler script is loaded
+        if (typeof initCamera !== 'function') {
+            // Create a script element to load the camera handler
+            const script = document.createElement('script');
+            script.src = '/static/JS/camera-handler.js';
+            script.onload = function() {
+                console.log("Camera handler loaded");
+            };
+            document.head.appendChild(script);
+        }
     }
-
-    selectedIndex = index; // Update the selected index
-
-    // If the index is valid, select the image
-    if (selectedIndex >= 0 && selectedIndex < images.length) {
-        selectedImage = images[selectedIndex]; // Set the selected image
-        selectedImage.style.border = "5px solid black"; // Black border
-        selectedImage.classList.add('selected'); // Add the selected class
-        selectedImageElement.src = selectedImage.src; // Copy the src of the selected image
-        selectedImageElement.style.display = "block"; // Display the selected image
-
-        // Extract the letter or number from the image name
-        const srcParts = selectedImage.src.split('/');
-        const fileName = srcParts[srcParts.length - 1].split('.')[0];
-        selectedLetter = fileName; // Update the selected letter
-
-        // Start the timer
-        startTimer(); // Start the timer
-        setInterval(predict, 1000); // Call the predict function every second
-
-        // Update the borders of all images in the gallery
-        images.forEach((img, i) => {
-            if (matchedBorders[i]) {
-                img.style.border = matchedBorders[i]; // Restore the matched border
-            }
-        });
-    }
-}
+});

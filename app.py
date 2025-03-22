@@ -392,6 +392,140 @@ def health_check():
         'camera_available': camera_available
     })
 
+@app.route('/predict_image', methods=['POST'])
+def predict_image():
+    """Process an image sent from the client-side camera and predict the sign"""
+    global model_loaded, model_loading
+    
+    # Check if model is still loading
+    if not model_loaded:
+        if model_loading:
+            return jsonify({'status': 'loading', 'message': 'Model is still loading, please try again in a moment'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Model failed to load'})
+    
+    # Get the image data from the request
+    data = request.get_json()
+    if not data or 'image' not in data:
+        return jsonify({'status': 'error', 'message': 'No image data received'})
+    
+    try:
+        # Convert base64 image to numpy array
+        image_data = base64.b64decode(data['image'])
+        np_arr = np.frombuffer(image_data, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        
+        # Process the image with MediaPipe
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = hands.process(frame_rgb)
+        
+        if not results.multi_hand_landmarks:
+            return jsonify({
+                'status': 'success', 
+                'prediction': 'No hand detected',
+                'image': base64.b64encode(cv2.imencode('.jpg', frame)[1].tobytes()).decode('utf-8')
+            })
+        
+        # Process hand landmarks
+        for hand_landmarks in results.multi_hand_landmarks:
+            landmarks = []
+            for landmark in hand_landmarks.landmark:
+                landmarks.append([landmark.x, landmark.y, landmark.z])
+            
+            # Draw landmarks on the image
+            mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+            
+            # Convert landmarks to input format for model
+            input_data = np.array(landmarks).reshape(1, 21, 3)
+            
+            # Make prediction
+            prediction = model.predict(input_data)
+            predicted_class = np.argmax(prediction, axis=1)[0]
+            predicted_character = classes[predicted_class]
+            
+            # Add text to the image
+            cv2.putText(frame, predicted_character, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+            
+            # Convert processed image back to base64
+            _, buffer = cv2.imencode('.jpg', frame)
+            img_str = base64.b64encode(buffer).decode('utf-8')
+            
+            return jsonify({
+                'status': 'success',
+                'prediction': predicted_character,
+                'image': img_str
+            })
+    
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        return jsonify({'status': 'error', 'message': f'Error processing image: {str(e)}'})
+
+@app.route('/process_speech', methods=['POST'])
+def process_speech():
+    """Process speech transcript from client-side speech recognition"""
+    data = request.get_json()
+    if not data or 'transcript' not in data:
+        return jsonify({'status': 'error', 'message': 'No transcript received'})
+    
+    transcript = data['transcript'].lower()
+    print(f"Client speech: {transcript}")
+    
+    # Process the transcript
+    if transcript.startswith("letter "):
+        character = transcript.split()[1].lower()
+        if len(character) == 1 and character.isalpha():
+            character_file = f"{character}.png"
+            image_path = f"/static/images/Hand signs/{character_file}"
+            return jsonify({
+                "status": "success", 
+                "image": image_path, 
+                "message": f"Showing sign for letter {character.upper()}",
+                "character": character
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Invalid letter: {character}"
+            })
+            
+    elif transcript.startswith("number "):
+        number_word = transcript.split()[1].lower()
+        
+        # Convert word to number if needed
+        if number_word in word_to_number:
+            number = word_to_number[number_word]
+            number_str = str(number)
+        else:
+            try:
+                # Try to parse as a number
+                number = int(number_word)
+                number_str = str(number)
+            except ValueError:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Invalid number: {number_word}"
+                })
+        
+        if number_str in classes:
+            image_path = f"/static/images/Hand signs/{number_str}.png"
+            return jsonify({
+                "status": "success", 
+                "image": image_path, 
+                "message": f"Showing sign for number {number_str}",
+                "character": number_str
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"No sign available for number {number_str}"
+            })
+    
+    else:
+        return jsonify({
+            "status": "error",
+            "message": "Please say 'letter' followed by a letter, or 'number' followed by a number"
+        })
+
 if __name__ == '__main__':
     try:
         # Get port from environment variable (for deployment) or use default

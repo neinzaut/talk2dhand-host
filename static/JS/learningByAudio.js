@@ -16,73 +16,149 @@ function displayImage(imageElement) {
   const randomImageElement = document.getElementById('randomImage');
   randomImageElement.src = selectedImageSrc;
   randomImageElement.style.display = 'block'; // Display the selected image from the gallery
+  
+  // Reset background colors and border
+  randomImageElement.style.backgroundColor = '';
+  randomImageElement.style.padding = '';
+  randomImageElement.style.border = '';
+  
+  // Hide the "Show Answer" button
+  document.getElementById('showAnswerButton').style.display = 'none';
 }
 
 let matchedIndexes = []; // Array to store all indexes of images that had a match
 let correctImagePath = ''; // Variable to store the path of the correct image
 let correctImageName = ''; // Variable to store the name of the correct image
-function startSpeechRecognition() {
-  // Hide the "Show Answer" button before starting speech recognition
-  document.getElementById('showAnswerButton').style.display = 'none';
 
-  micImageElement.src = micRecordingImage;
-  micImageElement.classList.add('gif-image');
+// We don't need the startSpeechRecognition function anymore
+// The microphone-handler.js provides all needed functionality
 
-  // Call to the server to start speech recognition
-  fetch('/speech_recognition') // API to start speech recognition
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById('speechResult').textContent = data.message;
-      if (data.image) {
-        const imagePath = `/static/images/Hand signs/${data.image}`;
-        const randomImageElement = document.getElementById('randomImage');
-
-        const letterFromImage = data.image.split('.')[0]; // Take the first part before the dot
-        const selectedImageSrc = galleryImages[selectedIndex].src.split('/').pop().split('.')[0]; // Name of the selected image from the gallery
-
-        if (letterFromImage === selectedImageSrc) {
-          console.log("Match between letters!");
-
-          // Add the index to the matches array
-          if (!matchedIndexes.includes(selectedIndex)) {
-            matchedIndexes.push(selectedIndex);
-          }
-
-          // Replace the selected image with the image from speech
-          randomImageElement.src = imagePath;
-          randomImageElement.style.backgroundColor = 'green';
-          randomImageElement.style.padding = '10px';
-
-          // Mark the image in the gallery with a green border
-          galleryImages[selectedIndex].style.border = '7px solid green';
-          document.getElementById('showAnswerButton').style.display = 'none'; // Hide the button if there was a match
-        } else {
-          console.log("No match.");
-          randomImageElement.style.backgroundColor = 'red'; // Red background in case of no match
-          randomImageElement.style.padding = '10px';
-
-          // Save the correct image
-          correctImagePath = imagePath;
-
-          // Save the name of the correct image
-          correctImageName = selectedImageSrc; // Save the name of the image from the gallery
-
-          document.getElementById('showAnswerButton').style.display = 'block'; // Show the button in case of no match
-        }
-      }
-      setTimeout(() => {
-        micImageElement.src = micDefaultImage; // Revert to the original image
-        micImageElement.classList.remove('gif-image');
-      }, 500);
-    })
-    .catch(error => {
-      console.error('Error during speech recognition:', error);
-      micImageElement.src = micDefaultImage; // Revert to the original image in case of error
-    });
+// Custom handler for when speech recognition gets a result
+// This function will be called by the microphone-handler.js
+// We're overriding the processSpeech function to customize its behavior
+function processSpeech(transcript) {
+  updateMicStatus(`You said: ${transcript}`, 'success');
+  
+  // Extract the command and argument
+  const words = transcript.toLowerCase().split(' ');
+  
+  // Check if it starts with "letter" or "number"
+  if (words[0] === 'letter' && words.length > 1) {
+    processLetterCommand(words[1]);
+  } else if (words[0] === 'number' && words.length > 1) {
+    processNumberCommand(words[1]);
+  } else {
+    updateMicStatus("Please say 'letter' followed by a letter, or 'number' followed by a number", 'info');
+  }
 }
 
-window.onload = function() {
-  // Automatic call to randomize the first image when the page loads
+// Process a letter command from speech recognition
+function processLetterCommand(letter) {
+  if (letter.length === 1 && letter.match(/[a-z]/i)) {
+    // Get the selected image name from the gallery
+    const selectedImageSrc = galleryImages[selectedIndex].src.split('/').pop().split('.')[0];
+    const randomImageElement = document.getElementById('randomImage');
+    
+    // Set the image path
+    const imagePath = `/static/images/Hand signs/${letter}.png`;
+    
+    // Check if the spoken letter matches the selected image
+    if (letter === selectedImageSrc) {
+      console.log("Match between letters!");
+      
+      // Add the index to the matches array
+      if (!matchedIndexes.includes(selectedIndex)) {
+        matchedIndexes.push(selectedIndex);
+      }
+      
+      // Update the image display
+      randomImageElement.src = imagePath;
+      randomImageElement.style.backgroundColor = 'green';
+      randomImageElement.style.padding = '10px';
+      
+      // Mark the gallery image
+      galleryImages[selectedIndex].style.border = '7px solid green';
+      document.getElementById('showAnswerButton').style.display = 'none';
+      
+      updateMicStatus(`Correct! You said letter "${letter.toUpperCase()}"`, 'success');
+    } else {
+      console.log("No match.");
+      randomImageElement.style.backgroundColor = 'red';
+      randomImageElement.style.padding = '10px';
+      
+      // Save the correct answer for the "Show Answer" button
+      correctImagePath = imagePath;
+      correctImageName = selectedImageSrc;
+      
+      document.getElementById('showAnswerButton').style.display = 'block';
+      updateMicStatus(`Not quite right. You said letter "${letter.toUpperCase()}" but this is a different sign.`, 'error');
+    }
+  } else {
+    updateMicStatus(`"${letter}" is not a valid letter`, 'error');
+  }
+}
+
+// Process a number command from speech recognition
+function processNumberCommand(number) {
+  // Try to convert word to number
+  let numberValue = NaN;
+  
+  // Check if it's a word like "one", "two", etc.
+  const wordToNumber = {
+    'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 
+    'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+  };
+  
+  if (number in wordToNumber) {
+    numberValue = wordToNumber[number];
+  } else {
+    // Try parsing it as a number
+    numberValue = parseInt(number);
+  }
+  
+  if (!isNaN(numberValue) && numberValue >= 0 && numberValue <= 10) {
+    // Get the selected image name
+    const selectedImageSrc = galleryImages[selectedIndex].src.split('/').pop().split('.')[0];
+    const randomImageElement = document.getElementById('randomImage');
+    
+    // Set the image path
+    const numberStr = numberValue.toString();
+    const imagePath = `/static/images/Hand signs/${numberStr}.png`;
+    
+    // Check if the spoken number matches the selected image
+    if (numberStr === selectedImageSrc || number === selectedImageSrc) {
+      console.log("Match between numbers!");
+      
+      // Add the index to the matches array
+      if (!matchedIndexes.includes(selectedIndex)) {
+        matchedIndexes.push(selectedIndex);
+      }
+      
+      // Update the image display
+      randomImageElement.src = imagePath;
+      randomImageElement.style.backgroundColor = 'green';
+      randomImageElement.style.padding = '10px';
+      
+      // Mark the gallery image
+      galleryImages[selectedIndex].style.border = '7px solid green';
+      document.getElementById('showAnswerButton').style.display = 'none';
+      
+      updateMicStatus(`Correct! You said number "${numberValue}"`, 'success');
+    } else {
+      console.log("No match.");
+      randomImageElement.style.backgroundColor = 'red';
+      randomImageElement.style.padding = '10px';
+      
+      // Save the correct answer for the "Show Answer" button
+      correctImagePath = imagePath;
+      correctImageName = selectedImageSrc;
+      
+      document.getElementById('showAnswerButton').style.display = 'block';
+      updateMicStatus(`Not quite right. You said number "${numberValue}" but this is a different sign.`, 'error');
+    }
+  } else {
+    updateMicStatus(`"${number}" is not a valid number (0-10)`, 'error');
+  }
 }
 
 let selectedIndex = 0; // The first selected image
@@ -90,11 +166,12 @@ const galleryImages = document.querySelectorAll('.gallery img');
 
 document.getElementById('showAnswerButton').addEventListener('click', function() {
   // Find the matching image from the "hand signs" folder
-  const correctImagePath = `/static/images/Hand signs/${correctImageName}.png`; // Update the extension here if different
+  const correctImagePath = `/static/images/Hand signs/${correctImageName}.png`; 
 
   // Display the correct image
   const randomImageElement = document.getElementById('randomImage');
   randomImageElement.src = correctImagePath; // Display the correct image
+  updateMicStatus(`This is the correct sign for "${correctImageName}"`, 'info');
 });
 
 // Function to select an image
@@ -127,8 +204,14 @@ function selectImage(index) {
   // Display the selected image above the microphone
   randomImageElement.src = galleryImages[index].src;
   randomImageElement.style.display = 'block';
+  
   // Hide the "Show Answer" button in case of selecting a new image
   document.getElementById('showAnswerButton').style.display = 'none';
+  
+  // Clear any status messages
+  if (document.getElementById('micStatus')) {
+    document.getElementById('micStatus').textContent = '';
+  }
 }
 
 // Update displayImage function to handle mouse click
@@ -160,8 +243,14 @@ function displayImage(imageElement) {
   // Display the selected image above the microphone
   randomImageElement.src = imageElement.src;
   randomImageElement.style.display = 'block';
+  
   // Hide the "Show Answer" button in case of selecting a new image
   document.getElementById('showAnswerButton').style.display = 'none';
+  
+  // Clear any status messages
+  if (document.getElementById('micStatus')) {
+    document.getElementById('micStatus').textContent = '';
+  }
 }
 
 // Listen for keyboard events
@@ -188,9 +277,7 @@ const intro= introJs();
 intro.setOptions({
   steps:[
     {
-
       element:document.querySelector('.gallery'),
-
       intro: `
               <div>
                   <p> Click on one sign to learn.</p>
@@ -200,9 +287,8 @@ intro.setOptions({
                position: 'right'
     },
     {
-
-    element:document.querySelector('#micImage'),
-    intro: `
+      element:document.querySelector('#micButton'),
+      intro: `
               <div>
                   <p> Click on the microphone to say the answer.</p>
                   <img src="/static/images/letterNumber.png" alt="Example Image" class="intro-image" >
@@ -210,11 +296,10 @@ intro.setOptions({
               `,
                  position: 'left'
     }
-
   ],
    tooltipClass: 'customTooltip'
 });
-document.querySelector('.start-steps').addEventListener('click', function(){
 
+document.querySelector('.start-steps').addEventListener('click', function(){
     intro.start();
 });

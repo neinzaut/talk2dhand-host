@@ -10,6 +10,29 @@
     <title>Talk2DHand</title>
     <link rel="stylesheet" href="/static/css/popupInstructions.css" >
     <link rel="icon" href="/static/images/logo_notext.png" type="image/png">
+    <script src="/static/JS/microphone-handler.js"></script>
+    <style>
+        /* Additional CSS for microphone elements */
+        .status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
 </head>
 
 <!-- NAVBAR -->
@@ -85,7 +108,7 @@
             </div>
         </div>
 
-        <div class="container">
+        <div class="container recordContainer">
             <!-- Box for the selected image -->
             <div class="pics">
                 <div class="box">
@@ -99,12 +122,14 @@
             <!-- Box for the image received from speech recognition -->
             <!-- Box for textual results and the microphone activation button -->
             <div class="box">
-                <img id="micImage" src="../static/images/wired-outline-188-microphone-recording-hover-recording.png"
-                    alt="Activate Speech Recognition"
-                    onclick="startSpeechRecognition()">
+                <button id="micButton" style="background: none; border: none; cursor: pointer; padding: 0;">
+                    <img id="micImage" src="../static/images/wired-outline-188-microphone-recording-hover-recording.png"
+                        alt="Activate Speech Recognition">
+                </button>
             </div>
             <div class="box">
                 <p id="speechResult"></p>
+                <div id="micStatus"></div>
             </div>
             <button id="showAnswerButton" style="display: none;">Show Answer</button>
         </div>
