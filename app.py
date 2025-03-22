@@ -62,33 +62,52 @@ word_to_number = {
     "ten": 10
 }
 
-# Open the camera
-camera = cv2.VideoCapture(0)
+# Open the camera with error handling
+try:
+    camera = cv2.VideoCapture(0)
+    camera_available = camera.isOpened()
+except Exception as e:
+    print(f"Camera initialization error: {e}")
+    camera = None
+    camera_available = False
 
 def generate_frames():
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            # Convert the frame from BGR to RGB for MediaPipe
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            # Detect hands in the frame
-            results = hands.process(frame_rgb)
-
-            # Draw hand landmarks on the frame
-            if results.multi_hand_landmarks:
-                for hand_landmarks in results.multi_hand_landmarks:
-                    mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-            # Encode the frame as a JPEG image
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-
-            # Return the image as a stream
+    if not camera_available:
+        # Generate a static frame with an error message
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        cv2.putText(frame, "Camera not available", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        
+        # Return a single static frame indefinitely
+        while True:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    else:
+        # Normal camera operation
+        while True:
+            success, frame = camera.read()
+            if not success:
+                break
+            else:
+                # Convert the frame from BGR to RGB for MediaPipe
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # Detect hands in the frame
+                results = hands.process(frame_rgb)
+
+                # Draw hand landmarks on the frame
+                if results.multi_hand_landmarks:
+                    for hand_landmarks in results.multi_hand_landmarks:
+                        mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+                # Encode the frame as a JPEG image
+                ret, buffer = cv2.imencode('.jpg', frame)
+                frame = buffer.tobytes()
+
+                # Return the image as a stream
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 @app.route('/')
 def index():
@@ -281,6 +300,9 @@ def save_name():
 
 @app.route('/capture')
 def capture():
+    if not camera_available:
+        return jsonify({'error': 'Camera not available in this environment', 'image': '', 'prediction': 'No camera'})
+    
     success, frame = camera.read()
     if not success:
         return jsonify({'error': 'Failed to capture image from camera'}), 500
@@ -345,25 +367,16 @@ def video_feed_pilot():
 
 if __name__ == '__main__':
     try:
-        # First try default port
-        port = 5000
-        max_attempts = 3
+        # Get port from environment variable (for deployment) or use default
+        port = int(os.environ.get('PORT', 5000))
+        host = os.environ.get('HOST', '0.0.0.0')  # Use 0.0.0.0 for production
         
-        for attempt in range(max_attempts):
-            try:
-                print(f"Attempting to start server on port {port}")
-                app.run(
-                    host='127.0.0.1',
-                    port=port,
-                    debug=True,
-                    use_reloader=False  # Disable reloader to prevent handle issues
-                )
-                break
-            except OSError as e:
-                print(f"Port {port} is busy, trying next port")
-                port += 1
-                if attempt == max_attempts - 1:
-                    raise e
-                
+        print(f"Attempting to start server on {host}:{port}")
+        app.run(
+            host=host,
+            port=port,
+            debug=False,  # Set to False in production
+            use_reloader=False  # Disable reloader to prevent handle issues
+        )
     except Exception as e:
         print(f"Failed to start server: {e}")

@@ -9,3 +9,4 @@ matplotlib==3.8.2
 beautifulsoup4==4.12.3
 PyAudio==0.2.14
 SpeechRecognition==3.10.4
+gunicorn==20.1.0
