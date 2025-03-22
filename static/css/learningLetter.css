@@ -1,0 +1,369 @@
+:root {
+    --navbar-height: 70px; /* Default navbar height */
+}
+
+/* General styles */
+body {
+    margin: 0; /* Remove default margin */
+    padding-top: var(--navbar-height); /* Use the CSS variable for padding */
+    background-image: url('/static/images/background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    font-family: "Fredoka", sans-serif;
+}
+
+header {
+    text-align: center;
+    padding-top: 20px;
+    font-weight: 800;
+    font-size: 5.5em;
+    background: linear-gradient(90deg, #1CB0F7, #0073FF); /* Gradient from blue to red */
+    -webkit-background-clip: text; /* Clip the background to the text */
+    color: transparent; /* Make the text color transparent */
+
+}
+
+h2 {
+    text-align: center;
+    font-size: x-large;
+}
+
+.subtitle-container{
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    margin-top: 0.5%;
+    height: 100px;
+    margin-bottom: 2.5%;
+}
+
+.subtitle {
+    background: linear-gradient(90deg, #FDC307, #F49001); /* Gradient from blue to red */
+    border-radius: 25px; /* Makes it look like a pill */
+    padding: 10px 20px; /* Adds some padding */
+    display: inline-block; /* Makes the div fit the content */
+    text-align: center; /* Center the text horizontally */
+    margin: 0 auto; /* Center the div horizontally in its parent */
+}
+
+.subtitle h2 {
+    color: white; /* White text color */
+    margin: 0; /* Removes default margin */
+    font-weight: 500;
+}
+
+/* - NAVIGATION BAR - */
+.navbar {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    right: 0;
+    z-index: 4;
+    height: 70px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   
+}
+
+.nav-logo {
+    height: 32px; /* 60% of navbar's 80px height */
+    margin: auto 0; /* Vertically middle align */
+    padding: 15px 30px;
+}
+
+.nav-links {
+    color: #0073FF;
+    text-decoration: none; /* Remove underline from links */
+    font-size: 16px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links-container {
+    display: flex;
+    gap: 30px;
+    padding: 0 30px;
+    align-items: center;
+}
+
+.nav-links:hover {
+    color: #1CB0F7;
+}
+
+/* - END NAVBAR - */
+
+
+.container {
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center align the content horizontally */
+    width: 100%; /* Set the width to 100% */
+    height: calc(100% - 100px); /* Calculate the height to be 100% minus 100px */
+    padding: 20px; /* Add padding to the container */
+}
+
+.gallery-container {
+    padding-right: 20px; /* Add padding to the right */
+    padding-left: 20px; /* Add padding to the left */
+    overflow-y: auto; /* Enable vertical scrolling */
+    max-height: 90vh; /* Set the maximum height to 90% of the viewport height */
+    width: fit-content; /* Adjust the width to fit the content */
+    display: flex; /* Use flexbox for layout */
+}
+
+.gallery {
+    display: grid; /* Use grid layout */
+    grid-template-columns: repeat(7, 1fr); /* Create 7 columns of equal width */
+    grid-template-rows: auto; /* Automatically adjust row height */
+    justify-items: center; /* Center align the items horizontally */
+    gap: 13px; /* Set the gap between items */
+    margin-left: 50px; /* Add margin to the left */
+    margin-top: 10px; /* Add margin to the top */
+}
+
+.gallery img {
+    width: 110px; /* Set the width of the images */
+    height: 110px; /* Set the height of the images */
+    border-radius: 20px; /* Add border radius for rounded corners */
+    border: 5px solid #9DDFFF; /* Add a solid border */
+    cursor: pointer; /* Change the cursor to a pointer on hover */
+    transition: transform 0.3s ease; /* Add a transition effect for transformations */
+}
+
+.gallery img:hover {
+    transform: scale(1.1); /* Scale the image on hover */
+}
+
+.selected {
+    border: 5px solid #9DDFFF !important;
+    outline: 5px solid #ffd95a;
+    transition: ease-in-out;
+}
+
+.camera-container {
+    position: relative; /* Set the position to relative */
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Arrange items in a column */
+    justify-content: space-between; /* Distribute space between items */
+    align-items: center; /* Center align items horizontally */
+    background-color: rgba(255, 255, 255, 0.8); /* Set the background color with opacity */
+    border-radius: 15px; /* Add border radius for rounded corners */
+    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); Add box shadow for depth */
+    border: 5px solid #1CB0F7 !important;
+    margin-right: 100px; /* Add margin to the right */
+    margin-left: 100px; /* Add margin to the left */
+    height: 650px; /* Set the height */
+    width: 600px; /* Set the width */
+    padding: 20px; /* Add padding to the container */
+    margin-top: 10px;
+}
+
+#camera {
+    margin-top: auto; /* Automatically adjust the top margin */
+    margin-bottom: 0; /* Set the bottom margin to 0 */
+}
+
+#camera img {
+    height: 23rem; /* Set the height of the image */
+    width: 30rem; /* Set the width of the image */
+    border-radius: 20px; /* Add border radius for rounded corners */
+    border: 5px solid #9DDFFF; /* Add a solid border */
+}
+
+#selectedImage {
+    width: 130px; /* Set the width of the selected image */
+    height: 130px; /* Set the height of the selected image */
+    border-radius: 20px; /* Add border radius for rounded corners */
+    margin-top: 2px; /* Add margin to the top */
+    border: 5px solid #9DDFFF; /* Add a solid border */
+    display: none; /* Hide the selected image by default */
+}
+
+#predictionText {
+    font-weight: bold; /* Set the font weight to bold */
+    color: #00070a; /* Set the text color */
+    text-align: center; /* Center align the text */
+    margin-top: 10px; /* Add margin to the top */
+    margin-bottom: 5px; /* Add margin to the bottom */
+    font-size: 5rem; /* Set the font size */
+}
+
+
+.start-steps {
+    float: right;
+    margin-top: -10px;
+    background: #1CB0F7;
+    border: none;
+    border-radius: 40px;
+    color: #ffffff;
+    padding: 5px 15px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 120px;
+    right: 20px;
+    width: auto;
+    min-width: 100px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 500;
+}
+
+.start-steps:hover {
+    /* transform: scale(1.049); */
+    background: #0073FF;
+    transition: 0.3s ease-in-out;
+}
+
+
+#digitalTimer {
+    color: #000800; /* Set the text color */
+    text-align: center; /* Center align the text */
+    background-color: rgba(238, 241, 247, 0.995); /* Set the background color with opacity */
+    padding: 5px; /* Add padding to the element */
+    border-radius: 30px; /* Add border radius for rounded corners */
+    /* width: 200px; Set the width */
+    height: 50px; /* Set the height */
+    position: absolute; /* Set the position to absolute */
+    top: 30px; /* Set the top position */
+    left: 10px; /* Set the left position */
+    margin-left: 15px;
+}
+
+
+.bottomPic {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: row; /* Arrange items in a row */
+    align-items: center; /* Center align items vertically */
+    margin: 20px 0; /* Add margin to the top and bottom */
+    margin-top: -10px; /* Add negative margin to the top */
+}
+
+.title {
+    text-align: center; /* Center align the text */
+    margin: 30px; /* Add margin to the element */
+    padding: 7px; /* Add padding to the element */
+    margin-bottom: 30px; /* Add margin to the bottom */
+    font-weight: 500; /* Set the font weight */
+    font-size: 1.8rem; /* Set the font size */
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.4); /* Add box shadow for depth */
+    height: 50px; /* Set the height */
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center align items horizontally */
+    align-items: center; /* Center align items vertically */
+}
+
+/* Adjustments for extra large screens */
+@media (max-width: 1600px) {
+    header {
+        font-size: 4em; /* Set the font size for extra large screens */
+        margin-bottom: -25px; /* Add negative margin to the bottom */
+    }
+
+    .titlePage {
+        font-size: 3rem; /* Set the font size for extra large screens */
+    }
+
+    .names {
+        font-size: 2em; /* Set the font size for extra large screens */
+    }
+
+    .camera-container {
+        height: 675px; /* Set the height for extra large screens */
+        padding: 20px; /* Add padding to the container */
+        width: fit-content; /* Adjust the width to fit the content */
+        margin-right: 40px; /* Add margin to the right */
+        margin-left: 20px; /* Add margin to the left */
+    }
+
+    .gallery-container {
+        max-height: 100%; /* Set the maximum height to 100% */
+        width: fit-content; /* Adjust the width to fit the content */
+    }
+
+    .gallery {
+        margin-left: 15px; /* Add margin to the left */
+        grid-template-columns: repeat(7, 1fr); /* Create 7 columns of equal width */
+    }
+
+    .gallery img {
+        width: 100px; /* Set the width of the images */
+        height: 100px; /* Set the height of the images */
+    }
+
+    .container {
+        height: fit-content; /* Adjust the height to fit the content */
+        padding: 5px; /* Add padding to the container */
+        margin-top: -30px; /* Add negative margin to the top */
+    }
+
+    #digitalTimer {
+        font-size: 20px; /* Set the font size */
+        width: 150px; /* Set the width */
+        height: 30px; /* Set the height */
+    }
+
+    #predictionText {
+        margin-top: -5px; /* Add negative margin to the top */
+        font-size: 3rem; /* Set the font size */
+    }
+}
+
+.customTooltip {
+    background-color: #f9f8f9; /* Set the background color */
+    border: 2px solid #7a8cba; /* Set the border color */
+    border-radius: 15px; /* Add border radius for rounded corners */
+    box-shadow: 5px 4px 20px rgba(0, 0, 0, 0.2); /* Add box shadow for depth */
+}
+
+.customTooltip img {
+    max-width: 300px; /* Set the maximum width of the image */
+    height: auto; /* Maintain the aspect ratio of the image */
+}
+
+.customTooltip * {
+    color: #050000; /* Set the text color */
+    font-size: 22px; /* Set the font size */
+}
+
+.customTooltip .introjs-tooltip-title {
+    color: #0a41c9; /* Set the title color */
+    font-weight: bold; /* Set the font weight to bold */
+}
+
+.customTooltip .introjs-arrow {
+    border-bottom-color: #f0f0f0; /* Set the arrow border color */
+}
+
+.customTooltip .introjs-button {
+    background-color: #e3e1e1; /* Set the background color */
+    color: #000000; /* Set the text color */
+    border: none; /* Remove the border */
+    border-radius: 7px; /* Add border radius for rounded corners */
+    padding: 10px 15px; /* Add padding to the button */
+    font-size: 18px; /* Set the font size */
+    cursor: pointer; /* Change the cursor to a pointer on hover */
+    transition: background-color 0.3s; /* Add a transition effect for the background color */
+}
+
+.customTooltip .introjs-button:hover {
+    background-color: #fbfbfc; /* Set the background color on hover */
+}
+
+.customTooltip .introjs-button:focus {
+    outline: none; /* Remove the outline on focus */
+}
+
+/* Style the image */
+.intro-image {
+    display: block; /* Display the image as a block element */
+    margin: 0 auto; /* Center the image horizontally */
+    max-width: 100%; /* Set the maximum width to 100% */
+    height: auto; /* Maintain the aspect ratio of the image */
+}

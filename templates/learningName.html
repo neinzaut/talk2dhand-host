@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/learningName.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk2DHand</title>
+    <link rel="stylesheet" href="/static/css/popupInstructions.css" >
+    <link rel="icon" href="/static/images/logo_notext.png" type="image/png">
+</head>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <img src="/static/images/logo_text.png" alt="Talk2DHand Icon" class="nav-logo">
+    <div class="nav-links-container">
+        <a href="/" class="nav-links">Home</a>
+        <a href="/learning" class="nav-links">Learning</a>
+        <a href="/practicing" class="nav-links">Practice</a>
+        <a href="/test" class="nav-links">Self-Test</a>
+
+    </div>
+</nav>
+
+<body>
+    <header>Hand Sign Learning</header>
+    <div class="content-wrapper">
+        <div class="subtitle-container">
+            <div class="subtitle">
+                <h2>Learning How to Sign Names</h2>
+            </div>
+        </div>
+        <div class="container">
+        <!-- Form to enter and submit the name -->
+        <div class="box">
+            <p>Enter your name:</p>
+            <div class="buttons">
+                <form action="/save_name" method="POST" onsubmit="resetImagesOpacity()">
+                    <label for="username"></label>
+                    <input type="text" id="username" name="username">
+                    <div id="savecleer">
+                        <button class="save" type="submit" name="action" value="save">Submit</button>
+                        <button type="submit" name="action" value="clear">Clear</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Display the images corresponding to the entered name -->
+        <div class="result">
+            {% if images %}
+            <div class="images">
+                {% for image in images %}
+                    {% if loop.first %}
+                        <img src="{{ image }}" alt="Letter Image" onload="checkImagesLoaded()" style="opacity: 1;"> <!-- First image -->
+                    {% else %}
+                        <img src="{{ image }}" alt="Letter Image" onload="checkImagesLoaded()" style="opacity: 0.4;"> <!-- Other images -->
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <script>
+                let imagesLoaded = 0;
+                const totalImages = document.querySelectorAll('.images img').length;
+
+                function checkImagesLoaded() {
+                    imagesLoaded++;
+                    if (imagesLoaded === totalImages) {
+                        startIntro(); // Start Intro.js when all images are loaded
+                    }
+                }
+            </script>
+            {% endif %}
+        </div>
+
+        <!-- Camera feed and prediction text -->
+        <div id="camera">
+            <img src="{{ url_for('video_feed') }}" id="videoFeed" alt="Video Feed">
+        </div>
+        <p id="predictionText"></p>
+    </div>
+    </div>
+    <script src="/static/JS/intro.min.js"></script>
+    <script src="/static/JS/learningName.js"></script>
+</body>
+</html>

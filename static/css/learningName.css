@@ -1,0 +1,304 @@
+:root {
+    --navbar-height: 70px; /* Default navbar height */
+}
+
+/* General styles */
+
+/* for vertical alignment of container */
+html, body {
+    height: 100%; /* Ensure the body takes full height */
+    margin: 0; /* Remove default margin */
+}
+
+body {
+    padding-top: var(--navbar-height); /* Use the CSS variable for padding */
+    background-image: url('/static/images/background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    font-family: "Fredoka", sans-serif;
+}
+
+header {
+    text-align: center;
+    padding-top: 20px;
+    font-weight: 800;
+    font-size: 5.5em;
+    background: linear-gradient(90deg, #1CB0F7, #0073FF); /* Gradient from blue to red */
+    -webkit-background-clip: text; /* Clip the background to the text */
+    color: transparent; /* Make the text color transparent */
+
+}
+
+h2 {
+    text-align: center;
+    font-size: x-large;
+}
+
+.subtitle-container{
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    margin-top: 0.5%;
+    height: 100px;
+    /* margin-bottom: 2.5%; */
+}
+
+.subtitle {
+    background: linear-gradient(90deg, #FDC307, #F49001); /* Gradient from blue to red */
+    border-radius: 25px; /* Makes it look like a pill */
+    padding: 10px 20px; /* Adds some padding */
+    display: inline-block; /* Makes the div fit the content */
+    text-align: center; /* Center the text horizontally */
+    margin: 0 auto; /* Center the div horizontally in its parent */
+}
+
+.subtitle h2 {
+    color: white; /* White text color */
+    margin: 0; /* Removes default margin */
+    font-weight: 500;
+}
+
+/* - NAVIGATION BAR - */
+.navbar {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    right: 0;
+    z-index: 4;
+    height: 70px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   
+}
+
+.nav-logo {
+    height: 32px; /* 60% of navbar's 80px height */
+    margin: auto 0; /* Vertically middle align */
+    padding: 15px 30px;
+}
+
+.nav-links {
+    color: #0073FF;
+    text-decoration: none; /* Remove underline from links */
+    font-size: 16px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links-container {
+    display: flex;
+    gap: 30px;
+    padding: 0 30px;
+    align-items: center;
+}
+
+.nav-links:hover {
+    color: #1CB0F7;
+}
+
+/* - END NAVBAR - */
+
+
+.container {
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border: 10px solid #9DDFFF;
+    border-radius: 30px;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+    min-height: 300px;
+    margin-top: auto;
+    margin-bottom: auto;
+    padding: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+
+
+.form-container {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    max-width: 400px;
+    margin: 20px auto;
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
+}
+
+input[type="text"] {
+    width: 400px;
+    height: 50px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+    font-size: 2rem;
+    /* box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.4); */
+}
+
+#savecleer {
+    display: flex;
+    justify-content: center; /* Center the buttons horizontally */
+    gap: 20px; /* Add gap between the buttons */
+    margin-top: 5px; /* Add margin top */
+    margin-bottom: 20px; /* Add margin bottom */
+    font-weight: 500;
+    font-size: 1.8rem;
+    /* box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.4); */
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+button {
+    background: #1CB0F7;
+    border: none;
+    border-radius: 60px;
+    /* box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4); */
+    color: #ffffff;
+    padding: 10px 15px;
+    width: 100px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-family: 'Fredoka', sans-serif;
+}
+
+button:hover {
+    background: #0073FF;
+}
+
+.result {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.images {
+    display: flex;
+    flex-wrap: wrap; /* Wrap items to the next line */
+    justify-content: center; /* Center items horizontally */
+    gap: 10px; /* Add gap between items */
+    margin-top: 20px; /* Add margin top */
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-bottom: 5%;
+}
+
+.label {
+    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.4);
+}
+
+.images img {
+    width: 100px;
+    height: 100px;
+    border: 3px solid #9DDFFF;
+    border-radius: 20px;
+}
+
+#camera {
+    margin-top: auto; /* Remove default margin top */
+    margin-bottom: 0; /* Remove default margin bottom */
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+#camera img {
+    height: 22rem;
+    width: 30rem;
+    border-radius: 20px;
+    border: 5px solid #9DDFFF;
+}
+
+.box {
+    margin-top: -40px;
+}
+
+.box p {
+    margin-top: 15%;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+#predictionText {
+    font-size: 2rem;
+    margin-top: 5px;
+}
+
+/* Responsive styles for larger screens */
+@media (max-width: 1600px) {
+    header {
+        font-size: 4em;
+        margin-bottom: -25px;
+    }
+
+    .titlePage {
+        font-size: 3rem;
+    }
+
+    .cards, .names {
+        width: 200px;
+        height: 200px;
+    }
+
+    .container {
+        height: 500px;
+        padding: 20px;
+        width: fit-content;
+        max-width: 1000px;
+        margin-right: 20px;
+        margin-left: 20px;
+    }
+
+    .gallery-container {
+        max-height: 100%;
+        width: fit-content;
+    }
+
+    .gallery {
+        margin-left: 15px;
+        grid-template-columns: repeat(7, 1fr);
+    }
+
+    .gallery img {
+        width: 100px;
+        height: 100px;
+    }
+
+    .container {
+        height: fit-content;
+        /* padding: 5px; */
+        /* margin-top:  15%; */
+    }
+
+    #digitalTimer {
+        font-size: 20px;
+        width: 150px;
+        height: 30px;
+    }
+
+    #predictionText {
+        margin-top: -5px;
+        font-size: 3rem;
+    }
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center horizontally */
+    justify-content: flex-start; /* Start from the top */
+    min-height: 100vh; /* Full viewport height */
+    padding-top: 2vh; /* Ensure it respects navbar height */
+}
+
+.subtitle-container {
+    margin-bottom: 2rem; /* Add spacing below subtitle */
+}

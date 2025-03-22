@@ -1,0 +1,11 @@
+Flask==3.0.3
+keras==3.5.0
+tensorflow==2.17.0
+numpy==1.26.3
+opencv-python==4.10.0.84
+mediapipe==0.10.14
+pandas==2.2.0
+matplotlib==3.8.2
+beautifulsoup4==4.12.3
+PyAudio==0.2.14
+SpeechRecognition==3.10.4

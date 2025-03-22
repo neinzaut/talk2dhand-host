@@ -1,0 +1,177 @@
+/* General styles */
+body {
+    background-image: url('/static/images/background.png');
+    background-attachment:fixed;
+    background-size: cover;
+    font-family: "Fredoka", sans-serif;
+    background-repeat: no-repeat;
+    margin: 0;
+}
+
+
+header {
+    text-align: center;
+    padding-top: 20px;
+    font-weight: 800;
+    font-size: 5.5em;
+    color: #fff;
+    text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.7);
+}
+
+p {
+    text-align: center;
+    font-weight: 500;
+    font-size: 2rem;
+    margin: 10px 20px;
+}
+
+.logo-icon {
+    width: 40%;
+    flex-shrink: 0;
+    margin-top: 8%;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.researchTitle {
+    color: #1CB0F7;
+    text-align: center;
+    font-family: Fredoka;
+    font-size: 2.5vw;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    max-width: 950px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    align-items: center;
+    margin-bottom: 3%;
+}
+
+.names {
+    text-align: center;
+    font-weight: 200;
+    font-size: 2.5em;
+}
+
+.custom-button {
+    border-radius: 1000px;
+    background: #1CB0F7;
+    border: none;
+    color: #ffffff;
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    margin: 14px auto;
+    text-align: center;
+    text-decoration: none;
+    padding: 10px 25px;
+}
+
+.custom-button:hover {
+    background: #0073FF;
+    /* box-shadow: 10px 16px 16px rgba(0, 0, 0, 0.6); */
+}
+
+.container {
+    display: grid;
+    place-items: center;
+    /* height: 200px; */
+}
+
+/* Responsive styles for larger screens */
+@media (max-width: 1600px) {
+    header {
+        margin-bottom: -25px;
+        font-size: 4em;
+    }
+
+    .titlePage {
+        font-size: 3rem;
+    }
+
+    .home-button {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+
+    .names {
+        font-size: 2em;
+    }
+
+    .custom-button {
+        /* padding: 30px 50px; */
+        font-size: 2rem;
+    }
+}
+
+/* Responsive styles for medium screens - tablets */
+@media (max-width: 1024px) {
+    header {
+        font-size: 4em;
+    }
+
+    .titlePage {
+        font-size: 3rem;
+    }
+
+    .names {
+        font-size: 2em;
+    }
+
+    .custom-button {
+        /* padding: 18px 40px; */
+        font-size: 1.2rem;
+    }
+}
+
+/* Responsive styles for small screens - smartphones */
+@media (max-width: 768px) {
+    header {
+        font-size: 3em;
+        padding-top: 15px;
+    }
+
+    .titlePage {
+        font-size: 2.5rem;
+        padding: 8px 20px;
+    }
+
+    .names {
+        font-size: 1.8em;
+    }
+
+    .custom-button {
+        /* padding: 14px 30px; */
+        font-size: 1rem;
+    }
+}
+
+/* Responsive styles for extra small screens - small smartphones */
+@media (max-width: 480px) {
+    header {
+        font-size: 2em;
+        padding-top: 10px;
+    }
+
+    .titlePage {
+        font-size: 2rem;
+    }
+
+    .names {
+        font-size: 1.5em;
+    }
+
+    .custom-button {
+        /* padding: 12px 25px; */
+        font-size: 0.9rem;
+    }
+}

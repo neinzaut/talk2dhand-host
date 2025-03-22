@@ -1,0 +1,627 @@
+:root {
+    --navbar-height: 70px; /* Default navbar height */
+}
+
+/* General styles */
+body {
+    margin: 0; /* Remove default margin */
+    padding-top: var(--navbar-height); /* Use the CSS variable for padding */
+    background-image: url('/static/images/background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    font-family: "Fredoka", sans-serif;
+}
+
+header {
+    text-align: center;
+    padding-top: 20px;
+    font-weight: 800;
+    font-size: 5.5em;
+    background: linear-gradient(90deg, #1CB0F7, #0073FF); /* Gradient from blue to red */
+    -webkit-background-clip: text; /* Clip the background to the text */
+    color: transparent; /* Make the text color transparent */
+
+}
+
+h2 {
+    text-align: center;
+    font-size: x-large;
+}
+
+.subtitle-container{
+    display: flex; /* Use flexbox for centering */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    margin-top: 0.5%;
+    height: 100px;
+    margin-bottom: 2.5%;
+}
+
+.subtitle {
+    background: linear-gradient(90deg, #FDC307, #F49001); /* Gradient from blue to red */
+    border-radius: 25px; /* Makes it look like a pill */
+    padding: 10px 20px; /* Adds some padding */
+    display: inline-block; /* Makes the div fit the content */
+    text-align: center; /* Center the text horizontally */
+    margin: 0 auto; /* Center the div horizontally in its parent */
+}
+
+.subtitle h2 {
+    color: white; /* White text color */
+    margin: 0; /* Removes default margin */
+    font-weight: 500;
+}
+
+/* - NAVIGATION BAR - */
+.navbar {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    right: 0;
+    z-index: 4;
+    height: 70px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   
+}
+
+.nav-logo {
+    height: 32px; /* 60% of navbar's 80px height */
+    margin: auto 0; /* Vertically middle align */
+    padding: 15px 30px;
+}
+
+.nav-links {
+    color: #0073FF;
+    text-decoration: none; /* Remove underline from links */
+    font-size: 16px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links-container {
+    display: flex;
+    gap: 30px;
+    padding: 0 30px;
+    align-items: center;
+}
+
+.nav-links:hover {
+    color: #1CB0F7;
+}
+
+/* - END NAVBAR - */
+
+.popup {
+    position: fixed;
+    z-index: 999; /* Ensure it's above other elements */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px); /* Apply blur effect to the background */
+    background-color: rgba(255, 255, 255, 0.5); /* Optional: semi-transparent background */
+}
+
+.popup-content {
+    background-color: #ffffff;
+    margin: 15% auto;
+    padding: 0px;
+    border: 1px solid #888;
+    width: 400px;
+    height: 300px;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.popup-content-start {
+    background-color: #ffffff;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 700px;
+    height: auto;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.popup-content-start img {
+    width: 100%; /* Ensure the image fits within the container */
+    height: auto; /* Maintain aspect ratio */
+}
+
+.popup-content-start button {
+    background: #1CB0F7;
+    border: none;
+    border-radius: 40px;
+    color: #ffffff;
+    padding: 10px 20px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 500;
+    max-width: calc(100% - 20px);
+    box-sizing: border-box;
+    margin-top: 20px;
+}
+
+.popup-content-start button:hover {
+    /* transform: scale(1.049); */
+    background: #0073FF;
+    transition: 0.3s ease-in-out;
+}
+
+.popupimg {
+    width: 700px;
+    height: 440px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.close:hover, .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#camera img {
+    height: 400px;
+    border-radius: 50px;
+    border: 15px solid #9DDFFF;
+}
+
+#camera {
+    position: relative;
+}
+
+#capturedImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 500px;
+    border-radius: 20px;
+    display: none;
+}
+
+/* Start container styling */
+#startContainer {
+    height: 200px;
+    width: 340px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none; /* Hidden at the start */
+    background-color: rgba(215, 214, 214, 0.7); /* Background color */
+    padding: 100px 100px; /* Padding for the start container */
+    border-radius: 39px; /* Rounded corners */
+}
+
+#startButton {
+    background: #1CB0F7;
+    border: none;
+    border-radius: 30px; 
+    color: #ffffff;
+    padding: 20px 50px;
+    font-size: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    position: absolute; /* Position the button in the center of the screen */
+    top: 50%; /* Vertically center */
+    left: 50%; /* Horizontally center */
+    transform: translate(-50%, -50%); /* Move the button to the center */
+    font-family: 'Fredoka', sans-serif;
+}
+
+#startButton:hover {
+    background-color: #0073FF !important;
+    color: #ffffff !important;
+}
+
+/* Counter styling */
+.counter {
+    font-weight: bold;
+    font-size: 1.5em;
+    color: #000000;
+    margin: 0 100px; /* Margin for the counters */
+    padding: 20px;
+    padding-left: 30px;
+    padding-right: 30px;
+    border-radius: 20px;
+    /* box-shadow: 7px 4px 10px rgba(0, 0, 0, 0.3); */
+    align-items: center;
+}
+
+.counter counter-correct{
+    background-color: #2B815C;
+    color: white;
+}
+
+.counter counter-wrong {
+    background-color: #E03C32;
+    color: white;
+}
+
+.answer {
+    display: flex;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.correct {
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+}
+
+.wrong {
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+}
+
+.timer-and-counters-container {
+    display: flex;
+    justify-content: space-between; /* Distribute space between items */
+    align-items: center; /* Center items vertically */
+    width: 40%; /* Set width to 40% */
+    padding: 0 20px; /* Padding for the container */
+    margin-top: 20px; /* Margin top */
+}
+
+#clock {
+    position: relative;
+    width: 210px;
+    height: 210px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-left: -30px;
+}
+
+#clock img {
+    width: 100%;
+    height: 100%;
+}
+
+#timer {
+    font-weight: bold;
+    font-size: 5em;
+    color: #333;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    margin-top: 15px;
+}
+
+/* Timer color changes */
+#timer.low {
+    color: rgb(250, 45, 45); /* Red color for low time */
+}
+
+#timer.medium {
+    color: rgb(215, 215, 27); /* Yellow color for medium time */
+}
+
+#timer.high {
+    color: rgb(69, 203, 69); /* Green color for high time */
+}
+
+.titlePage {
+    text-align: center;
+    font-weight: 700;
+    font-size: 3.5rem;
+    background: linear-gradient(to right, #a0dff4, #f7b3cc);
+    padding: 10px 40px;
+    margin-top: 40px;
+    color: #fff;
+}
+
+.predictionResult {
+    margin-top: 200px;
+}
+
+#endGamePopup {
+    position: fixed; /* Fixed position */
+    left: 50%; /* Center horizontally */
+    top: 40%; /* Center vertically */
+    bottom: 5%;
+    transform: translate(-50%, -50%); /* Center the pop-up */
+    background-color: white; /* Background color */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow */
+    padding: 10px; /* Padding */
+    padding-top: 50px;
+    z-index: 1000; /* Ensure the pop-up is above other elements */
+    display: none; /* Hidden by default */
+    align-items: center;
+    height: 900px;
+    justify-content: center;
+    margin-top: 100px; /* Ensure the close button is visible */
+    max-height: calc(100% - 100px); /* Adjust max height to account for the new margin */
+    overflow-y: auto; /* Enable vertical scrolling */
+    backdrop-filter: blur(5px); /* Apply blur effect to the background */
+    /* padding-bottom: 50px; */
+}
+
+#endGamePopup {
+    margin: 80px 10px;
+}
+
+#endGamePopup p {
+    text-align: center;
+}
+
+#endGamePopup button {
+    color:#ffffff; /* Text color */
+    background-color: #1CB0F7;
+    border: none; /* No border */
+    border-radius: 10px; /* Rounded corners */
+    padding: 10px 20px; /* Padding */
+    cursor: pointer; /* Pointer cursor */
+    font-size: 16px; /* Font size */ 
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 500;
+}
+
+#endGamePopup button:hover {
+    background-color: #0073FF; /* Background color on hover */
+}
+
+#scoreDisplay {
+    color: #000000;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    border-radius: 30px;
+    margin: auto;
+    padding: 5px 60px; /* Padding for the container */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Box shadow */
+    width: 600px; /* Set width to fit content */
+    margin-top: -30px;
+}
+
+.top-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 20px;
+    margin-bottom: 10px; /* Margin bottom */
+}
+
+.box {
+    padding-right: 10px;
+    display: flex;
+    padding-left: 30px;
+    align-items: center;
+}
+
+#block {
+    width: 100px;
+    height: 110px;
+    text-align: center;
+    background: linear-gradient(to top, #0073FF, #1CB0F7); 
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#randomCharacter {
+    font-size: 3.6rem; /* Increase font size */
+    font-weight: bold; /* Optional: make the text bold */
+    color: #ffffff;
+}
+
+.box-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#popupImage {
+    margin-bottom: 15px; /* Margin bottom for the image */
+    margin: auto;
+}
+
+#resultImage {
+    margin: 10px auto; /* Center the image */
+    display: block;
+}
+
+#title-letter {
+    font-size: 3.6rem;
+    width: 210px;
+    text-align: center;
+    font-weight: 700;
+    color: rgb(0, 5, 9);
+    margin-right: 15px;
+}
+
+.errors-container {
+    display: flex;
+    flex-wrap: wrap; /* Wrap items to the next line */
+    gap: 20px; /* Gap between items */
+    justify-content: center; /* Center items horizontally */
+}
+
+.errors-container img {
+    margin: auto 50px;
+}
+
+.errors-container div {
+    background-color: transparent;
+}
+
+.error-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 150px; /* Width for the image and text */
+    text-align: center;
+}
+
+.error-image {
+    width: 150px;
+    height: 150px;
+}
+
+.error-text {
+    margin-top: 10px;
+}
+
+.expected-predicted {
+    display: flex;
+    flex-direction: column;
+}
+
+.popEndContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* max-height: calc(100% - 100px); */ /* Commented out to allow full height */
+    backdrop-filter: blur(5px); /* Apply blur effect to the background */
+    background-color: rgba(255, 255, 255, 0.8); /* Optional: semi-transparent background */
+    overflow-y: auto; /* Enable vertical scrolling if content exceeds height */
+}
+
+.start-steps {
+    float: right;
+    margin-top: -10px;
+    background: #1CB0F7;
+    border: none;
+    border-radius: 40px;
+    color: #ffffff;
+    padding: 5px 15px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 120px;
+    right: 20px;
+    width: auto;
+    min-width: 100px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 500;
+}
+
+.start-steps:hover {
+    /* transform: scale(1.049); */
+    background: #0073FF;
+    transition: 0.3s ease-in-out;
+}
+
+/* Responsive styles for larger screens */
+@media (max-width: 1600px) {
+    header {
+        margin-bottom: -25px;
+        font-size: 4em;
+    }
+
+    .titlePage {
+        font-size: 3rem;
+    }
+
+    .home-button {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+
+    .names {
+        font-size: 2em;
+    }
+
+    .custom-button {
+        padding: 30px 50px;
+        font-size: 2rem;
+    }
+}
+
+/* Responsive styles for medium screens - tablets */
+@media (max-width: 1024px) {
+    header {
+        font-size: 4em;
+    }
+
+    .titlePage {
+        font-size: 3rem;
+    }
+
+    .names {
+        font-size: 2em;
+    }
+
+    .custom-button {
+        padding: 18px 40px;
+        font-size: 1.2rem;
+    }
+}
+
+/* Responsive styles for small screens - smartphones */
+@media (max-width: 768px) {
+    header {
+        font-size: 3em;
+        padding-top: 15px;
+    }
+
+    .titlePage {
+        font-size: 2.5rem;
+        padding: 8px 20px;
+    }
+
+    .names {
+        font-size: 1.8em;
+    }
+
+    .custom-button {
+        padding: 14px 30px;
+        font-size: 1rem;
+    }
+}
+
+/* Responsive styles for extra small screens - small smartphones */
+@media (max-width: 480px) {
+    header {
+        font-size: 2em;
+        padding-top: 10px;
+    }
+
+    .titlePage {
+        font-size: 2rem;
+    }
+
+    .names {
+        font-size: 1.5em;
+    }
+
+    .custom-button {
+        padding: 12px 25px;
+        font-size: 0.9rem;
+    }
+}

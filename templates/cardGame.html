@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/cardGame.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk2DHand</title>
+    <link rel="icon" href="/static/images/logo_notext.png" type="image/png">
+    <link rel="stylesheet" href="/static/css/popupInstructions.css" >
+</head>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <img src="/static/images/logo_text.png" alt="Talk2DHand Icon" class="nav-logo">
+    <div class="nav-links-container">
+        <a href="/" class="nav-links">Home</a>
+        <a href="/learning" class="nav-links">Learning</a>
+        <a href="/practicing" class="nav-links">Practice</a>
+        <a href="/test" class="nav-links">Self-Test</a>
+
+    </div>
+</nav>
+
+<body>
+    <header>Hand Sign Learning</header>
+
+    <div class="subtitle-container">
+        <div class="subtitle">
+            <h2>Memory Game</h2>
+        </div>
+    </div>
+
+    <button class="start-steps">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 48 52" fill="none" style="margin-right: 10px;"> <!-- Added margin-right -->
+          <path d="M23.9998 0.666748C36.8868 0.666748 47.3332 11.1131 47.3332 24.0001C47.3332 36.8871 36.8868 47.3334 23.9998 47.3334C11.1128 47.3334 0.666504 36.8871 0.666504 24.0001C0.666504 11.1131 11.1128 0.666748 23.9998 0.666748ZM23.9998 5.33341C19.0491 5.33341 14.3012 7.30008 10.8005 10.8008C7.29983 14.3014 5.33317 19.0494 5.33317 24.0001C5.33317 28.9508 7.29983 33.6987 10.8005 37.1994C14.3012 40.7001 19.0491 42.6667 23.9998 42.6667C28.9505 42.6667 33.6985 40.7001 37.1992 37.1994C40.6998 33.6987 42.6665 28.9508 42.6665 24.0001C42.6665 19.0494 40.6998 14.3014 37.1992 10.8008C33.6985 7.30008 28.9505 5.33341 23.9998 5.33341ZM23.9765 19.3334C25.2785 19.3334 26.3332 20.3881 26.3332 21.6901V33.6461C26.778 33.9029 27.1256 34.2993 27.3221 34.7739C27.5187 35.2484 27.5532 35.7745 27.4202 36.2707C27.2873 36.7668 26.9944 37.2052 26.5869 37.5179C26.1794 37.8306 25.6801 38.0001 25.1665 38.0001H24.0232C23.7137 38.0001 23.4072 37.9391 23.1213 37.8207C22.8354 37.7023 22.5756 37.5287 22.3568 37.3098C22.1379 37.091 21.9643 36.8312 21.8459 36.5453C21.7275 36.2593 21.6665 35.9529 21.6665 35.6434V24.0001C21.0477 24.0001 20.4542 23.7542 20.0166 23.3167C19.579 22.8791 19.3332 22.2856 19.3332 21.6667C19.3332 21.0479 19.579 20.4544 20.0166 20.0168C20.4542 19.5792 21.0477 19.3334 21.6665 19.3334H23.9765ZM23.9998 12.3334C24.6187 12.3334 25.2122 12.5792 25.6498 13.0168C26.0873 13.4544 26.3332 14.0479 26.3332 14.6667C26.3332 15.2856 26.0873 15.8791 25.6498 16.3167C25.2122 16.7542 24.6187 17.0001 23.9998 17.0001C23.381 17.0001 22.7875 16.7542 22.3499 16.3167C21.9123 15.8791 21.6665 15.2856 21.6665 14.6667C21.6665 14.0479 21.9123 13.4544 22.3499 13.0168C22.7875 12.5792 23.381 12.3334 23.9998 12.3334Z" fill="white"/>
+        </svg>
+        How to Use?
+    </button>
+    
+    <div class="container">
+        <!-- Gallery for letter images -->
+        <div class="gallery-container">
+            <div class="gallery" id="lettersGallery">
+                <img src="/static/images/letters/0.png" alt="Image 0">
+                <img src="/static/images/letters/1.png" alt="Image 1">
+                <img src="/static/images/letters/2.png" alt="Image 2">
+                <img src="/static/images/letters/3.png" alt="Image 3">
+                <img src="/static/images/letters/4.png" alt="Image 4">
+                <img src="/static/images/letters/5.png" alt="Image 5">
+                <img src="/static/images/letters/6.png" alt="Image 6">
+                <img src="/static/images/letters/7.png" alt="Image 7">
+                <img src="/static/images/letters/8.png" alt="Image 8">
+                <img src="/static/images/letters/9.png" alt="Image 9">
+                <img src="/static/images/letters/10.png" alt="Image 10">
+                <img src="/static/images/letters/a.png" alt="Image 11">
+                <img src="/static/images/letters/b.png" alt="Image 12">
+                <img src="/static/images/letters/c.png" alt="Image 13">
+                <img src="/static/images/letters/d.png" alt="Image 14">
+                <img src="/static/images/letters/e.png" alt="Image 15">
+                <img src="/static/images/letters/f.png" alt="Image 16">
+                <img src="/static/images/letters/g.png" alt="Image 17">
+                <img src="/static/images/letters/h.png" alt="Image 18">
+                <img src="/static/images/letters/i.png" alt="Image 19">
+                <img src="/static/images/letters/j.png" alt="Image 20">
+                <img src="/static/images/letters/k.png" alt="Image 21">
+                <img src="/static/images/letters/l.png" alt="Image 22">
+                <img src="/static/images/letters/m.png" alt="Image 23">
+                <img src="/static/images/letters/n.png" alt="Image 24">
+                <img src="/static/images/letters/o.png" alt="Image 25">
+                <img src="/static/images/letters/p.png" alt="Image 26">
+                <img src="/static/images/letters/q.png" alt="Image 27">
+                <img src="/static/images/letters/r.png" alt="Image 28">
+                <img src="/static/images/letters/s.png" alt="Image 29">
+                <img src="/static/images/letters/t.png" alt="Image 30">
+                <img src="/static/images/letters/u.png" alt="Image 31">
+                <img src="/static/images/letters/v.png" alt="Image 32">
+                <img src="/static/images/letters/w.png" alt="Image 33">
+                <img src="/static/images/letters/x.png" alt="Image 34">
+                <img src="/static/images/letters/y.png" alt="Image 35">
+                <img src="/static/images/letters/z.png" alt="Image 36">
+            </div>
+        </div>
+
+        <!-- Gallery for hand sign images -->
+        <div class="gallery-container">
+            <div class="gallery" id="handSignGallery">
+                <img src="/static/images/hand sign none/zero.png" alt="Image 0">
+                <img src="/static/images/hand sign none/one.png" alt="Image 1">
+                <img src="/static/images/hand sign none/two.png" alt="Image 2">
+                <img src="/static/images/hand sign none/three.png" alt="Image 3">
+                <img src="/static/images/hand sign none/four.png" alt="Image 4">
+                <img src="/static/images/hand sign none/five.png" alt="Image 5">
+                <img src="/static/images/hand sign none/six.png" alt="Image 6">
+                <img src="/static/images/hand sign none/seven.png" alt="Image 7">
+                <img src="/static/images/hand sign none/eight.png" alt="Image 8">
+                <img src="/static/images/hand sign none/nine.png" alt="Image 9">
+                <img src="/static/images/hand sign none/ten.png" alt="Image 10">
+                <img src="/static/images/hand sign none/a.png" alt="Image 11">
+                <img src="/static/images/hand sign none/b.png" alt="Image 12">
+                <img src="/static/images/hand sign none/c.png" alt="Image 13">
+                <img src="/static/images/hand sign none/d.png" alt="Image 14">
+                <img src="/static/images/hand sign none/e.png" alt="Image 15">
+                <img src="/static/images/hand sign none/f.png" alt="Image 16">
+                <img src="/static/images/hand sign none/g.png" alt="Image 17">
+                <img src="/static/images/hand sign none/h.png" alt="Image 18">
+                <img src="/static/images/hand sign none/i.png" alt="Image 19">
+                <img src="/static/images/hand sign none/j.png" alt="Image 20">
+                <img src="/static/images/hand sign none/k.png" alt="Image 21">
+                <img src="/static/images/hand sign none/l.png" alt="Image 22">
+                <img src="/static/images/hand sign none/m.png" alt="Image 23">
+                <img src="/static/images/hand sign none/n.png" alt="Image 24">
+                <img src="/static/images/hand sign none/o.png" alt="Image 25">
+                <img src="/static/images/hand sign none/p.png" alt="Image 26">
+                <img src="/static/images/hand sign none/q.png" alt="Image 27">
+                <img src="/static/images/hand sign none/r.png" alt="Image 28">
+                <img src="/static/images/hand sign none/s.png" alt="Image 29">
+                <img src="/static/images/hand sign none/t.png" alt="Image 30">
+                <img src="/static/images/hand sign none/u.png" alt="Image 31">
+                <img src="/static/images/hand sign none/v.png" alt="Image 32">
+                <img src="/static/images/hand sign none/w.png" alt="Image 33">
+                <img src="/static/images/hand sign none/x.png" alt="Image 34">
+                <img src="/static/images/hand sign none/y.png" alt="Image 35">
+                <img src="/static/images/hand sign none/z.png" alt="Image 36">
+            </div>
+        </div>
+    </div>
+
+    <!-- Congratulations Popup -->
+    <div id="congratulationsPopup" style="display: none; background-color: rgba(0, 0, 0, 0.8);">
+        <div class="popup-content" style="background-color: white; padding: 40px; border-radius: 10px; text-align: center;">
+            <img src="../static/images/good job.gif" width="480px" height="480px">
+            <button onclick="closePopup()">Close</button>
+        </div>
+    </div>
+</body>
+</html>
+
+<script src="/static/JS/intro.min.js"></script>
+<script src="/static/JS/cardGame.js"></script>

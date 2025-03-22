@@ -1,0 +1,220 @@
+body {
+    background-image: url('/static/images/background.png'); /* Set the background image for the body */
+    background-size: cover; /* Ensure the background image covers the entire body */
+    background-repeat: no-repeat; /* Prevent the background image from repeating */
+    margin: 0; /* Remove default margin */
+    font-family: "Fredoka", sans-serif;
+}
+
+header {
+    text-align: center; /* Center align the text in the header */
+    padding-top: 20px; /* Add padding to the top of the header */
+    font-weight: 800; /* Set the font weight to 800 */
+    font-size: 5.5em; /* Set the font size to 5.5em */
+    color: #fff; /* Set the text color to white */
+    text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.7); /* Add text shadow for better readability */
+}
+
+/* - NAVIGATION BAR - */
+.navbar {
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    right: 0;
+    z-index: 4;
+    height: 70px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   
+}
+.nav-logo {
+    height: 32px; /* 60% of navbar's 80px height */
+    margin: auto 0; /* Vertically middle align */
+    padding: 15px 30px;
+}
+
+.nav-links {
+    color: #0073FF;
+    text-decoration: none; /* Remove underline from links */
+    font-size: 16px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links-container {
+    display: flex;
+    gap: 30px;
+    padding: 0 30px;
+    align-items: center;
+}
+
+.nav-links:hover {
+    color: #1CB0F7;
+}
+
+/* - END NAVBAR - */
+
+
+
+h1 {
+    display: flex; /* Change to flex to enable flexbox properties */
+    justify-content: center; /* Center align horizontally */
+    align-items: center; /* Center align vertically */
+    font-size: 12vh;
+    margin-block-start: 1.2em;
+    margin-bottom: 0; /* Adjusted margin to lessen the gap */
+    /* font-weight: bold; */
+    background: linear-gradient(90deg, #1CB0F7, #0073FF); /* Gradient from blue to red */
+    -webkit-background-clip: text; /* Clip the background to the text */
+    color: transparent; /* Make the text color transparent */
+}
+
+.menue {
+    justify-content: center; /* Center align the content horizontally */
+    display: flex; /* Use flexbox for layout */
+    flex-wrap: wrap; /* Allow items to wrap */
+    gap: 20px; /* Set the gap between items */
+    margin-top: 20px; /* Add margin to the top */
+}
+
+.learn {
+    margin: 0 20px; /* Add margin to the left and right */
+    padding: 15px; /* Add padding to the element */
+    background: linear-gradient(90deg, #FDC307, #F49001); /* Set the background to a gradient */
+    border-radius: 40px; /* Add border radius for rounded corners */
+    transition: transform 0.3s ease; /* Add transition for smooth scaling */
+}
+
+.learn:hover {
+    transform: scale(1.05); /* Scale the element on hover */
+}
+
+
+.title {
+    text-align: center; /* Center align the text */
+    padding: 7px; /* Add padding to the element */
+    font-weight: 500; /* Set the font weight */
+    font-size: 1.8rem; /* Set the font size */
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.4); /* Add box shadow for depth */
+    height: 50px; /* Set the height */
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center align items horizontally */
+    align-items: center; /* Center align items vertically */
+    background: rgba(255, 255, 255, 0.6); /* Set the background color with opacity */
+    border-radius: 20px; /* Add border radius for rounded corners */
+}
+
+.select-gif {
+    display: flex; /* Make the parent a flex container */
+    justify-content: center; /* Center items horizontally */
+    align-items: center; /* Center items vertically */
+    height: 8vh;
+}
+
+.select-gif img {
+    max-height: 100%; /* Ensure the image does not exceed its container's width */
+    height: auto; /* Maintain aspect ratio */
+}
+
+
+.image-link {
+    display: inline-block; /* Display the element as an inline-block */
+}
+
+.image-link img:hover {
+    transform: scale(1.05); /* Scale the image on hover */
+}
+
+
+.container {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Arrange items in a column */
+    align-items: center; /* Center align items horizontally */
+    justify-content: center; /* Center align items vertically */
+}
+
+.container p {
+    text-align: center;
+    font-size: 3.5vh;
+    color: #1CB0F7;
+    font-weight: 500; /* Added to make the text slightly bolder */
+}
+
+/* Adjustments for medium-sized devices - tablets */
+@media (max-width: 1600px) {
+    header {
+        font-size: 4em; /* Set the font size for medium-sized devices */
+        margin-bottom: -25px; /* Add negative margin to the bottom */
+    }
+
+    .titlePage {
+        font-size: 3rem; /* Set the font size for medium-sized devices */
+    }
+
+    .learn {
+        width: 200px; /* Set the width for medium-sized devices */
+        height: 200px; /* Set the height for medium-sized devices */
+    }
+}
+
+/* Adjustments for small devices - smartphones */
+@media (max-width: 768px) {
+    header {
+        font-size: 3em; /* Set the font size for small devices */
+        padding-top: 15px; /* Add padding to the top */
+    }
+
+    .titlePage {
+        font-size: 2.5rem; /* Set the font size for small devices */
+        padding: 8px 20px; /* Add padding to the element */
+    }
+
+    .home-button {
+        padding: 8px 16px; /* Add padding to the button */
+        font-size: 0.9rem; /* Set the font size */
+        top: 15px; /* Set the top position */
+        right: 15px; /* Set the right position */
+    }
+
+    .learn {
+        width: 150px; /* Set the width for small devices */
+        height: 150px; /* Set the height for small devices */
+        padding: 10px; /* Add padding to the element */
+    }
+
+    .title {
+        font-size: 1.5rem; /* Set the font size for small devices */
+        height: 40px; /* Set the height */
+    }
+}
+
+/* Adjustments for very small devices - small smartphones */
+@media (max-width: 480px) {
+    header {
+        font-size: 2em; /* Set the font size for very small devices */
+        padding-top: 10px; /* Add padding to the top */
+    }
+
+    .titlePage {
+        font-size: 2rem; /* Set the font size for very small devices */
+    }
+
+    .home-button {
+        padding: 6px 10px; /* Add padding to the button */
+        font-size: 0.8rem; /* Set the font size */
+    }
+
+    .learn {
+        width: 120px; /* Set the width for very small devices */
+        height: 120px; /* Set the height for very small devices */
+        padding: 8px; /* Add padding to the element */
+    }
+
+    .title {
+        font-size: 1.2rem; /* Set the font size for very small devices */
+        height: 30px; /* Set the height */
+    }
+}
+

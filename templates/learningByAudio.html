@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/learningByAudio.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk2DHand</title>
+    <link rel="stylesheet" href="/static/css/popupInstructions.css" >
+    <link rel="icon" href="/static/images/logo_notext.png" type="image/png">
+</head>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <img src="/static/images/logo_text.png" alt="Talk2DHand Icon" class="nav-logo">
+    <div class="nav-links-container">
+        <a href="/" class="nav-links">Home</a>
+        <a href="/learning" class="nav-links">Learning</a>
+        <a href="/practicing" class="nav-links">Practice</a>
+        <a href="/test" class="nav-links">Self-Test</a>
+
+    </div>
+</nav>
+
+<body>
+    <header>Hand Sign Learning</header>
+
+    <div class="subtitle-container">
+        <div class="subtitle">
+            <h2>Learning Letters by Audio</h2>
+        </div>
+    </div>
+
+    <button class="start-steps">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 48 52" fill="none" style="margin-right: 10px;"> <!-- Added margin-right -->
+          <path d="M23.9998 0.666748C36.8868 0.666748 47.3332 11.1131 47.3332 24.0001C47.3332 36.8871 36.8868 47.3334 23.9998 47.3334C11.1128 47.3334 0.666504 36.8871 0.666504 24.0001C0.666504 11.1131 11.1128 0.666748 23.9998 0.666748ZM23.9998 5.33341C19.0491 5.33341 14.3012 7.30008 10.8005 10.8008C7.29983 14.3014 5.33317 19.0494 5.33317 24.0001C5.33317 28.9508 7.29983 33.6987 10.8005 37.1994C14.3012 40.7001 19.0491 42.6667 23.9998 42.6667C28.9505 42.6667 33.6985 40.7001 37.1992 37.1994C40.6998 33.6987 42.6665 28.9508 42.6665 24.0001C42.6665 19.0494 40.6998 14.3014 37.1992 10.8008C33.6985 7.30008 28.9505 5.33341 23.9998 5.33341ZM23.9765 19.3334C25.2785 19.3334 26.3332 20.3881 26.3332 21.6901V33.6461C26.778 33.9029 27.1256 34.2993 27.3221 34.7739C27.5187 35.2484 27.5532 35.7745 27.4202 36.2707C27.2873 36.7668 26.9944 37.2052 26.5869 37.5179C26.1794 37.8306 25.6801 38.0001 25.1665 38.0001H24.0232C23.7137 38.0001 23.4072 37.9391 23.1213 37.8207C22.8354 37.7023 22.5756 37.5287 22.3568 37.3098C22.1379 37.091 21.9643 36.8312 21.8459 36.5453C21.7275 36.2593 21.6665 35.9529 21.6665 35.6434V24.0001C21.0477 24.0001 20.4542 23.7542 20.0166 23.3167C19.579 22.8791 19.3332 22.2856 19.3332 21.6667C19.3332 21.0479 19.579 20.4544 20.0166 20.0168C20.4542 19.5792 21.0477 19.3334 21.6665 19.3334H23.9765ZM23.9998 12.3334C24.6187 12.3334 25.2122 12.5792 25.6498 13.0168C26.0873 13.4544 26.3332 14.0479 26.3332 14.6667C26.3332 15.2856 26.0873 15.8791 25.6498 16.3167C25.2122 16.7542 24.6187 17.0001 23.9998 17.0001C23.381 17.0001 22.7875 16.7542 22.3499 16.3167C21.9123 15.8791 21.6665 15.2856 21.6665 14.6667C21.6665 14.0479 21.9123 13.4544 22.3499 13.0168C22.7875 12.5792 23.381 12.3334 23.9998 12.3334Z" fill="white"/>
+        </svg>
+        How to Use?
+    </button>
+
+
+    <div class="container-all">
+        <!-- Left side - Gallery -->
+        <div class="gallery-container">
+            <div class="gallery">
+                <img src="/static/images/hand sign none/zero.png" alt="Image 0" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/one.png" alt="Image 1" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/two.png" alt="Image 2" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/three.png" alt="Image 3" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/four.png" alt="Image 4" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/five.png" alt="Image 5" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/six.png" alt="Image 6" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/seven.png" alt="Image 7" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/eight.png" alt="Image 8" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/nine.png" alt="Image 9" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/ten.png" alt="Image 10" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/a.png" alt="Image 11" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/b.png" alt="Image 12" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/c.png" alt="Image 13" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/d.png" alt="Image 14" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/e.png" alt="Image 15" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/f.png" alt="Image 16" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/g.png" alt="Image 17" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/h.png" alt="Image 18" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/i.png" alt="Image 19" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/j.png" alt="Image 20" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/k.png" alt="Image 21" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/l.png" alt="Image 22" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/m.png" alt="Image 23" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/n.png" alt="Image 24" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/o.png" alt="Image 25" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/p.png" alt="Image 26" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/q.png" alt="Image 27" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/r.png" alt="Image 28" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/s.png" alt="Image 29" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/t.png" alt="Image 30" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/u.png" alt="Image 31" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/v.png" alt="Image 32" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/w.png" alt="Image 33" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/x.png" alt="Image 34" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/y.png" alt="Image 35" onclick="displayImage(this)">
+                <img src="/static/images/hand sign none/z.png" alt="Image 36" onclick="displayImage(this)">
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Box for the selected image -->
+            <div class="pics">
+                <div class="box">
+                    <img id="speechImage" style="display: none;">
+                </div>
+                <div class="box">
+                    <img id="randomImage" src="" alt="Random Image" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Box for the image received from speech recognition -->
+            <!-- Box for textual results and the microphone activation button -->
+            <div class="box">
+                <img id="micImage" src="../static/images/wired-outline-188-microphone-recording-hover-recording.png"
+                    alt="Activate Speech Recognition"
+                    onclick="startSpeechRecognition()">
+            </div>
+            <div class="box">
+                <p id="speechResult"></p>
+            </div>
+            <button id="showAnswerButton" style="display: none;">Show Answer</button>
+        </div>
+    </div>
+
+    <script src="/static/JS/intro.min.js"></script>
+    <script src="/static/JS/learningByAudio.js"></script>
+    <script>
+        window.onload = function() {
+            const navbarHeight = document.querySelector('.navbar').offsetHeight;
+            document.documentElement.style.setProperty('--navbar-height', navbarHeight + 'px');
+        };
+    </script>
+</body>
+</html>

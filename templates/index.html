@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk2DHand</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Hand Sign Recognition Project</h1>
+        <p>Lumakang, Tuazon, Virtudez</p>
+    </header>
+
+    <div class="grid-container">
+        <!-- Section 1: Name in Sign Language -->
+        <div class="grid-item">
+            <h2>Your name in sign language</h2>
+            <div class="buttons">
+                <form action="/save_name" method="POST">
+                    <label for="username">Enter your name:</label>
+                    <input type="text" id="username" name="username">
+                    <button type="submit" name="action" value="save">Save</button>
+                    <button type="submit" name="action" value="clear">Clear</button>
+                </form>
+            </div>
+            {% if images %}
+            <div class="images">
+                {% for image in images %}
+                    <img src="{{ image }}" alt="Letter Image" style="width:100px;height:100px;">
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Section 2: Camera & Prediction -->
+        <div class="grid-item">
+            <h2>Camera & Prediction</h2>
+            <div id="camera">
+                <img src="{{ url_for('video_feed') }}" id="videoFeed" alt="Video Feed">
+            </div>
+            <p id="predictionText">Predicted Number:</p>
+            <img id="predictionImage" src="" alt="Prediction Image">
+        </div>
+
+        <!-- Section 3: Speech Recognition -->
+        <div class="grid-item">
+            <h2>Speech Recognition</h2>
+            <img id="micImage" src="/static/images/wired-outline-188-microphone-recording-hover-recording.png"
+                 alt="Activate Speech Recognition"
+                 onclick="startSpeechRecognition()">
+            <p id="speechResult"></p>
+            <img id="speechImage" src="" alt="Matching Image">
+        </div>
+
+        <!-- Section 4: Hand Sign Recognition with MediaPipe -->
+        <div class="grid-item">
+            <h2>Hand Sign Recognition with MediaPipe</h2>
+            <div>
+                <button onclick="captureImage()">Capture Image</button>
+                <button onclick="captureAgain()">Capture Again</button>
+                <button onclick="sendPrediction()">Send</button>
+                <button onclick="getRandomCharacter()">Random Character</button>
+            </div>
+            <div>
+                <h3>Captured Image:</h3>
+                <img id="capturedImage" src="" alt="Captured Image" width="640" height="480">
+            </div>
+            <div>
+                <h3>Model Prediction:</h3>
+                <p id="predictionResult"></p>
+            </div>
+            <div>
+                <h3>Random Character:</h3>
+                <p id="randomCharacter">{{ random_character }}</p>
+            </div>
+            <div>
+                <h3>Result:</h3>
+                <p id="checkResult"></p>
+            </div>
+
+            <div id="popup" class="popup" style="display: none;">
+                <div class="popup-content">
+                    <span class="close" onclick="closePopup()">&times;</span>
+                    <p id="popupMessage"></p>
+                    <button onclick="closePopup()">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='resources/functions.js') }}"></script>
+</body>
+</html>

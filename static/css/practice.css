@@ -1,0 +1,182 @@
+body {
+    background-image: url('/static/images/background.png'); /* Set the background image for the body */
+    background-size: 100%; /* Ensure the background image covers the entire body */
+    background-repeat: no-repeat; /* Prevent the background image from repeating */
+}
+
+header {
+    text-align: center; /* Center align the text in the header */
+    padding-top: 20px; /* Add padding to the top of the header */
+    font-weight: 800; /* Set the font weight to 800 */
+    font-size: 5.5em; /* Set the font size to 5.5em */
+    color: #fff; /* Set the text color to white */
+    text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.7); /* Add text shadow for better readability */
+    font-family: rubik; /* Set the font family */
+}
+
+p {
+    text-align: center; /* Center align the text in paragraphs */
+    font-family: rubik; /* Set the font family for paragraphs */
+    font-weight: 500; /* Set the font weight to 500 */
+    font-size: 2rem; /* Set the font size to 2rem */
+}
+
+/* Home button styling */
+.home-button {
+    position: fixed; /* Set the position to fixed */
+    top: 20px; /* Set the top position */
+    right: 20px; /* Set the right position */
+    background: linear-gradient(to right, #a0dff4, #f7b3cc); /* Set the background gradient */
+    border: none; /* Remove the border */
+    border-radius: 60px; /* Add border radius for rounded corners */
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.4); /* Add box shadow for depth */
+    color: #333; /* Set the text color */
+    padding: 18px 40px; /* Add padding to the button */
+    font-size: 1.4rem; /* Set the font size */
+    cursor: pointer; /* Change the cursor to a pointer on hover */
+    transition: all 0.3s ease; /* Add a transition effect for all properties */
+    font-family: rubik; /* Set the font family */
+    font-weight: 600; /* Set the font weight */
+    text-decoration: none; /* Remove text decoration */
+}
+
+.home-button:hover {
+    transform: scale(1.049); /* Scale the button on hover */
+}
+
+.titlePage {
+    text-align: center; /* Center align the text */
+    font-family: rubik; /* Set the font family */
+    font-weight: 700; /* Set the font weight */
+    font-size: 3.5rem; /* Set the font size */
+    background: linear-gradient(to right, #a0dff4, #f7b3cc); /* Set the background gradient */
+    padding: 10px 40px; /* Add padding to the element */
+    margin-top: 40px; /* Add margin to the top */
+    color: #fff; /* Set the text color */
+    text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.7); /* Add text shadow for better readability */
+}
+
+.menue {
+    justify-content: center; /* Center align the content horizontally */
+    display: flex; /* Use flexbox for layout */
+}
+
+.cards, .names {
+    margin: 0 50px; /* Add horizontal margin between the images */
+    padding: 15px; /* Add padding to the element */
+    background-color: rgb(236, 197, 214); /* Set the background color */
+    border-radius: 40px; /* Add border radius for rounded corners */
+    box-shadow: 7px 4px 10px rgba(0, 0, 0, 0.3); /* Add box shadow for depth */
+}
+
+.title {
+    text-align: center; /* Center align the text */
+    margin: 30px; /* Add margin to the element */
+    padding: 7px; /* Add padding to the element */
+    margin-bottom: 30px; /* Add margin to the bottom */
+    font-family: rubik; /* Set the font family */
+    font-weight: 500; /* Set the font weight */
+    font-size: 1.8rem; /* Set the font size */
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.4); /* Add box shadow for depth */
+    height: 50px; /* Set the height */
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center align items horizontally */
+    align-items: center; /* Center align items vertically */
+    background-color: rgba(255, 255, 255, 0.6); /* Set the background color with opacity */
+}
+
+.image-link {
+    display: inline-block; /* Display the element as an inline-block */
+}
+
+.image-link img {
+    transition: transform 0.3s; /* Add a transition effect for transformations */
+    cursor: pointer; /* Change the cursor to a pointer on hover */
+}
+
+.image-link img:hover {
+    transform: scale(1.05); /* Scale the image on hover */
+}
+
+.container {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Arrange items in a column */
+    align-items: center; /* Center align items horizontally */
+    justify-content: center; /* Center align items vertically */
+}
+
+/* Adjustments for medium-sized devices - tablets */
+@media (max-width: 1600px) {
+    header {
+        font-size: 4em; /* Set the font size for medium-sized devices */
+        margin-bottom: -25px; /* Add negative margin to the bottom */
+    }
+
+    .titlePage {
+        font-size: 3rem; /* Set the font size for medium-sized devices */
+    }
+
+    .cards, .names {
+        width: 200px; /* Set the width for medium-sized devices */
+        height: 200px; /* Set the height for medium-sized devices */
+    }
+}
+
+/* Adjustments for small devices - smartphones */
+@media (max-width: 768px) {
+    header {
+        font-size: 3em; /* Set the font size for small devices */
+        padding-top: 15px; /* Add padding to the top */
+    }
+
+    .titlePage {
+        font-size: 2.5rem; /* Set the font size for small devices */
+        padding: 8px 20px; /* Add padding to the element */
+    }
+
+    .home-button {
+        padding: 8px 16px; /* Add padding to the button */
+        font-size: 0.9rem; /* Set the font size */
+        top: 15px; /* Set the top position */
+        right: 15px; /* Set the right position */
+    }
+
+    .cards, .names {
+        width: 150px; /* Set the width for small devices */
+        height: 150px; /* Set the height for small devices */
+        padding: 10px; /* Add padding to the element */
+    }
+
+    .title {
+        font-size: 1.5rem; /* Set the font size for small devices */
+        height: 40px; /* Set the height */
+    }
+}
+
+/* Adjustments for very small devices - small smartphones */
+@media (max-width: 480px) {
+    header {
+        font-size: 2em; /* Set the font size for very small devices */
+        padding-top: 10px; /* Add padding to the top */
+    }
+
+    .titlePage {
+        font-size: 2rem; /* Set the font size for very small devices */
+    }
+
+    .home-button {
+        padding: 6px 10px; /* Add padding to the button */
+        font-size: 0.8rem; /* Set the font size */
+    }
+
+    .cards, .names {
+        width: 120px; /* Set the width for very small devices */
+        height: 120px; /* Set the height for very small devices */
+        padding: 8px; /* Add padding to the element */
+    }
+
+    .title {
+        font-size: 1.2rem; /* Set the font size for very small devices */
+        height: 30px; /* Set the height */
+    }
+}
