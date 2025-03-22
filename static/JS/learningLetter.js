@@ -18,20 +18,32 @@ let predictionInterval = null; // Store the interval ID
 function predict() {
     // Use the sendImageForPrediction function from camera-handler.js
     if (typeof sendImageForPrediction === 'function') {
-        sendImageForPrediction(function(data) {
-            if (data.status === 'success') {
-                document.getElementById('predictionText').textContent = ` ${data.prediction}`;
+        console.log("Sending image for prediction...");
+        
+        sendImageForPrediction()
+            .then(data => {
+                console.log("Prediction response received:", data);
+                
+                if (data.status === 'success') {
+                    console.log(`Prediction successful: "${data.prediction}"`);
+                    document.getElementById('predictionText').textContent = ` ${data.prediction}`;
 
-                // If there is a selected image, start checking the match
-                if (selectedImage) {
-                    checkPrediction(data.prediction);
+                    // If there is a selected image, start checking the match
+                    if (selectedImage) {
+                        checkPrediction(data.prediction);
+                    }
+                } else if (data.status === 'loading') {
+                    console.log("Model is still loading");
+                    document.getElementById('predictionText').textContent = ' Model is loading...';
+                } else {
+                    console.error("Prediction error:", data.message);
+                    document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
                 }
-            } else if (data.status === 'loading') {
-                document.getElementById('predictionText').textContent = ' Model is loading...';
-            } else {
-                document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
-            }
-        });
+            })
+            .catch(error => {
+                console.error("Error in prediction:", error);
+                document.getElementById('predictionText').textContent = ' Error requesting prediction';
+            });
     } else {
         console.error('Camera handler not loaded properly');
         document.getElementById('predictionText').textContent = ' Camera unavailable';

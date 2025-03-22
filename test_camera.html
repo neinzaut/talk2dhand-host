@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Handler Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #camera {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #webcam {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 10px;
+            border: 2px solid #304C89;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #304C89;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        #logs {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Camera Handler Test</h1>
+    <p>This page tests the camera-handler.js functionality, especially the prediction endpoint.</p>
+
+    <div id="camera">
+        <video id="webcam" autoplay></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <button id="testBtn">Test Prediction</button>
+    <button id="clearBtn">Clear Logs</button>
+
+    <div>
+        <h3>Prediction Results:</h3>
+        <p id="predictionText">No prediction yet</p>
+    </div>
+
+    <div>
+        <h3>Console Logs:</h3>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        // Override console.log to also show in the logs div
+        const originalLog = console.log;
+        const originalError = console.error;
+        const logsDiv = document.getElementById('logs');
+
+        console.log = function() {
+            const args = Array.from(arguments);
+            const logMessage = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : arg
+            ).join(' ');
+            
+            logsDiv.innerHTML += `<div style="color: blue;">[LOG] ${logMessage}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            originalLog.apply(console, arguments);
+        };
+
+        console.error = function() {
+            const args = Array.from(arguments);
+            const logMessage = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : arg
+            ).join(' ');
+            
+            logsDiv.innerHTML += `<div style="color: red;">[ERROR] ${logMessage}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            originalError.apply(console, arguments);
+        };
+
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            logsDiv.innerHTML = '';
+        });
+    </script>
+
+    <!-- Include the camera-handler.js file -->
+    <script src="static/JS/camera-handler.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Page loaded, initializing camera");
+            
+            // Initialize the camera
+            initCamera();
+            
+            // Add click event for testing prediction
+            document.getElementById('testBtn').addEventListener('click', function() {
+                console.log("Testing prediction...");
+                
+                if (typeof sendImageForPrediction === 'function') {
+                    sendImageForPrediction()
+                        .then(data => {
+                            console.log("Prediction response received:", data);
+                            
+                            if (data.status === 'success') {
+                                console.log(`Prediction successful: "${data.prediction}"`);
+                                document.getElementById('predictionText').textContent = `Prediction: ${data.prediction}`;
+                            } else if (data.status === 'loading') {
+                                console.log("Model is still loading");
+                                document.getElementById('predictionText').textContent = 'Model is loading...';
+                            } else {
+                                console.error("Prediction error:", data.message);
+                                document.getElementById('predictionText').textContent = `Error: ${data.message || 'Unknown error'}`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error in prediction:", error);
+                            document.getElementById('predictionText').textContent = 'Error requesting prediction';
+                        });
+                } else {
+                    console.error('Camera handler not loaded properly');
+                    document.getElementById('predictionText').textContent = 'Camera handler not available';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

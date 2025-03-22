@@ -94,10 +94,15 @@ function updateTimerStyle(timeLeft) {
 
 function captureAndPredict() {
     // Use client-side camera to capture and make prediction
+    console.log("Capturing image and requesting prediction...");
+    
     sendImageForPrediction()
         .then(response => {
+            console.log("Prediction response received:", response);
+            
             if (response.status === "success") {
                 predictedCharacter = response.prediction;
+                console.log(`Prediction successful: "${predictedCharacter}"`);
                 document.getElementById('predictionResult').innerText = predictedCharacter;
                 
                 // Store the captured image base64 for error tracking
@@ -107,6 +112,14 @@ function captureAndPredict() {
                 capturedImage.style.display = 'none';
                 
                 sendPrediction();
+            } else if (response.status === "loading") {
+                console.log("Model is still loading");
+                document.getElementById('predictionResult').innerText = "Model is loading, please wait...";
+                
+                // Try again in a few seconds
+                setTimeout(() => {
+                    captureAndPredict();
+                }, 3000);
             } else {
                 console.error("Prediction error:", response.message);
                 document.getElementById('predictionResult').innerText = "Error: " + response.message;

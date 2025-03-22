@@ -323,6 +323,7 @@ function startManualMediaPipeProcessing() {
 function sendImageForPrediction() {
     return new Promise((resolve, reject) => {
         if (!streamStarted) {
+            console.error("Cannot predict: Camera not available");
             resolve({ status: 'error', message: 'Camera not available' });
             return;
         }
@@ -330,28 +331,49 @@ function sendImageForPrediction() {
         // Capture the image
         const imageData = captureImage();
         if (!imageData) {
+            console.error("Cannot predict: Failed to capture image");
             resolve({ status: 'error', message: 'Failed to capture image' });
             return;
         }
         
+        console.log("Image captured successfully, preparing to send to server");
+        
         // Remove the data URL prefix to get just the base64 data
         const base64Data = imageData.split(',')[1];
         
+        // Construct the endpoint URL - handle both absolute and relative paths
+        const baseUrl = window.location.origin;
+        const endpointUrl = `${baseUrl}/predict_image`;
+        console.log(`Sending prediction request to: ${endpointUrl}`);
+        
         // Send the image data to the server
-        fetch('/predict_image', {
+        console.log("Sending image to server for prediction...");
+        fetch(endpointUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ image: base64Data })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log(`Server response status: ${response.status} ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            console.log("Received response from server");
+            return response.json();
+        })
         .then(data => {
+            console.log("Prediction result:", data);
             resolve(data);
         })
         .catch(error => {
             console.error('Error sending image for prediction:', error);
-            resolve({ status: 'error', message: 'Network error' });
+            resolve({ 
+                status: 'error', 
+                message: 'Network error: ' + error.message,
+                endpoint: endpointUrl 
+            });
         });
     });
 }

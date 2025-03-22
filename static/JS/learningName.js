@@ -54,20 +54,32 @@ function getLettersFromImages(predictedLetter) {
 function predict() {
     // Use the client-side camera instead of server-side
     if (typeof sendImageForPrediction === 'function') {
-        sendImageForPrediction(function(data) {
-            if (data.status === 'success') {
-                // Update the prediction text
-                const predictedLetter = data.prediction;
-                document.getElementById('predictionText').textContent = ` ${predictedLetter}`;
+        console.log("Sending image for prediction in learningName.js...");
+        
+        sendImageForPrediction()
+            .then(data => {
+                console.log("Prediction response received:", data);
                 
-                // Call the function that updates the images based on the prediction
-                getLettersFromImages(predictedLetter);
-            } else if (data.status === 'loading') {
-                document.getElementById('predictionText').textContent = ' Model is loading...';
-            } else {
-                document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
-            }
-        });
+                if (data.status === 'success') {
+                    // Update the prediction text
+                    const predictedLetter = data.prediction;
+                    console.log(`Prediction successful: "${predictedLetter}"`);
+                    document.getElementById('predictionText').textContent = ` ${predictedLetter}`;
+                    
+                    // Call the function that updates the images based on the prediction
+                    getLettersFromImages(predictedLetter);
+                } else if (data.status === 'loading') {
+                    console.log("Model is still loading");
+                    document.getElementById('predictionText').textContent = ' Model is loading...';
+                } else {
+                    console.error("Prediction error:", data.message);
+                    document.getElementById('predictionText').textContent = ` Error: ${data.message || 'Unknown error'}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error in prediction:', error);
+                document.getElementById('predictionText').textContent = ' Error requesting prediction';
+            });
     } else {
         console.error('Camera handler not loaded properly');
         document.getElementById('predictionText').textContent = ' Camera unavailable';
