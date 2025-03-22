@@ -4,6 +4,87 @@ let canvasElement;
 let canvasContext;
 let streamStarted = false;
 let mediaStream = null;
+let mediaPipeInitialized = false;
+let hands = null;
+
+// Initialize MediaPipe
+async function initMediaPipe() {
+    if (!mediaPipeInitialized) {
+        try {
+            updateStatus('Initializing MediaPipe...', 'info');
+            console.log("Loading MediaPipe Hands...");
+            
+            // Make sure the HTML imports the MediaPipe libraries
+            // You should include these in your HTML:
+            // <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+            // <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+            // <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+            
+            if (typeof Hands === 'undefined') {
+                updateStatus('MediaPipe library not loaded. Please check your internet connection.', 'error');
+                return false;
+            }
+            
+            hands = new Hands({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }});
+            
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            
+            hands.onResults(onMediaPipeResults);
+            
+            mediaPipeInitialized = true;
+            updateStatus('MediaPipe initialized', 'success');
+            console.log("MediaPipe Hands initialized successfully");
+            return true;
+        } catch (error) {
+            console.error("Error initializing MediaPipe:", error);
+            updateStatus('Failed to initialize MediaPipe. Using basic mode instead.', 'error');
+            return false;
+        }
+    }
+    return mediaPipeInitialized;
+}
+
+// Handle MediaPipe results
+function onMediaPipeResults(results) {
+    // Clear the canvas
+    canvasContext.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    // Draw the camera feed on the canvas
+    canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+    
+    // Draw hand landmarks if present
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (const landmarks of results.multiHandLandmarks) {
+            // Draw landmarks if drawingUtils is available
+            if (typeof drawConnectors !== 'undefined') {
+                drawConnectors(canvasContext, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 3});
+                drawLandmarks(canvasContext, landmarks, {color: '#FF0000', lineWidth: 1});
+            } else {
+                // Simple landmark drawing if MediaPipe drawing utils not available
+                drawSimpleLandmarks(canvasContext, landmarks);
+            }
+        }
+    }
+}
+
+// Simple function to draw landmarks if MediaPipe drawing utils are not available
+function drawSimpleLandmarks(ctx, landmarks) {
+    ctx.fillStyle = "#FF0000";
+    for (const landmark of landmarks) {
+        const x = landmark.x * canvasElement.width;
+        const y = landmark.y * canvasElement.height;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+}
 
 // Initialize the camera when the page loads
 function initCamera() {
@@ -124,47 +205,154 @@ function captureImage() {
         return null;
     }
     
-    // Draw the current video frame to the canvas
-    canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-    
-    // Convert canvas to data URL (base64 encoded image)
-    const imageDataUrl = canvasElement.toDataURL('image/jpeg');
-    
-    return imageDataUrl;
+    if (mediaPipeInitialized) {
+        // Use existing canvas with hand landmarks
+        return canvasElement.toDataURL('image/jpeg');
+    } else {
+        // Draw the current video frame to the canvas
+        canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+        // Convert canvas to data URL (base64 encoded image)
+        return canvasElement.toDataURL('image/jpeg');
+    }
 }
 
-// Send the captured image to the server for prediction
-function sendImageForPrediction(callback) {
-    if (!streamStarted) {
-        callback({ status: 'error', message: 'Camera not available' });
-        return;
-    }
+// Initialize the camera with a Promise
+function initializeCamera() {
+    return new Promise((resolve, reject) => {
+        console.log("Initializing camera with Promise");
+        
+        // Create or get the necessary HTML elements
+        videoElement = document.getElementById('webcam') || createVideoElement();
+        canvasElement = document.getElementById('canvas') || createCanvasElement();
+        canvasContext = canvasElement.getContext('2d');
+        
+        // Request camera access from the browser with explicit constraints to force permission dialog
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Show a message that we're requesting access
+            updateStatus('Requesting camera access...', 'info');
+            
+            const constraints = {
+                video: {
+                    width: { ideal: 320 },
+                    height: { ideal: 240 }
+                }
+            };
+            
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    // Success - camera access granted
+                    mediaStream = stream;
+                    videoElement.srcObject = stream;
+                    streamStarted = true;
+                    
+                    // Show the video element on the page
+                    videoElement.style.display = 'block';
+                    
+                    // Add a status message
+                    updateStatus('Camera connected', 'success');
+                    console.log("Camera connected successfully");
+                    
+                    // Initialize MediaPipe
+                    initMediaPipe().then(success => {
+                        if (success && hands) {
+                            updateStatus('Camera ready with MediaPipe', 'success');
+                            
+                            // Start MediaPipe camera
+                            try {
+                                if (typeof Camera !== 'undefined') {
+                                    const camera = new Camera(videoElement, {
+                                        onFrame: async () => {
+                                            await hands.send({image: videoElement});
+                                        }
+                                    });
+                                    camera.start();
+                                } else {
+                                    // If MediaPipe Camera isn't available, use manual processing
+                                    startManualMediaPipeProcessing();
+                                }
+                            } catch (error) {
+                                console.error("Error starting MediaPipe Camera:", error);
+                                startManualMediaPipeProcessing();
+                            }
+                        }
+                        resolve(); // Resolve the promise
+                    });
+                })
+                .catch(error => {
+                    // Error - camera access denied or not available
+                    console.error('Camera error:', error);
+                    
+                    if (error.name === 'NotAllowedError') {
+                        updateStatus('Camera access denied. Please allow camera access in your browser settings and reload the page.', 'error');
+                    } else if (error.name === 'NotFoundError') {
+                        updateStatus('No camera detected. Please connect a camera and reload the page.', 'error');
+                    } else if (error.name === 'NotReadableError') {
+                        updateStatus('Camera is already in use by another application.', 'error');
+                    } else {
+                        updateStatus('Camera error: ' + error.message, 'error');
+                    }
+                    reject(error); // Reject the promise
+                });
+        } else {
+            const error = new Error('Your browser does not support camera access');
+            updateStatus('Your browser does not support camera access. Please try using Chrome, Firefox, or Edge.', 'error');
+            reject(error); // Reject the promise
+        }
+    });
+}
+
+// Manual processing of video frames with MediaPipe
+function startManualMediaPipeProcessing() {
+    if (!hands) return;
     
-    // Capture the image
-    const imageData = captureImage();
-    if (!imageData) {
-        callback({ status: 'error', message: 'Failed to capture image' });
-        return;
-    }
+    const processFrame = async () => {
+        if (streamStarted && hands) {
+            try {
+                await hands.send({image: videoElement});
+            } catch (error) {
+                console.error("Error processing frame with MediaPipe:", error);
+            }
+            requestAnimationFrame(processFrame);
+        }
+    };
     
-    // Remove the data URL prefix to get just the base64 data
-    const base64Data = imageData.split(',')[1];
-    
-    // Send the image data to the server
-    fetch('/predict_image', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image: base64Data })
-    })
-    .then(response => response.json())
-    .then(data => {
-        callback(data);
-    })
-    .catch(error => {
-        console.error('Error sending image for prediction:', error);
-        callback({ status: 'error', message: 'Network error' });
+    requestAnimationFrame(processFrame);
+}
+
+// Send the captured image to the server for prediction (Promise-based)
+function sendImageForPrediction() {
+    return new Promise((resolve, reject) => {
+        if (!streamStarted) {
+            resolve({ status: 'error', message: 'Camera not available' });
+            return;
+        }
+        
+        // Capture the image
+        const imageData = captureImage();
+        if (!imageData) {
+            resolve({ status: 'error', message: 'Failed to capture image' });
+            return;
+        }
+        
+        // Remove the data URL prefix to get just the base64 data
+        const base64Data = imageData.split(',')[1];
+        
+        // Send the image data to the server
+        fetch('/predict_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image: base64Data })
+        })
+        .then(response => response.json())
+        .then(data => {
+            resolve(data);
+        })
+        .catch(error => {
+            console.error('Error sending image for prediction:', error);
+            resolve({ status: 'error', message: 'Network error' });
+        });
     });
 }
 

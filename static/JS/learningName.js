@@ -52,24 +52,26 @@ function getLettersFromImages(predictedLetter) {
 }
 
 function predict() {
-    fetch('/predict') // API for the GET request
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+    // Use the client-side camera instead of server-side
+    if (typeof sendImageForPrediction === 'function') {
+        sendImageForPrediction(function(data) {
+            if (data.status === 'success') {
+                // Update the prediction text
+                const predictedLetter = data.prediction;
+                document.getElementById('predictionText').textContent = ` ${predictedLetter}`;
+                
+                // Call the function that updates the images based on the prediction
+                getLettersFromImages(predictedLetter);
+            } else if (data.status === 'loading') {
+                document.getElementById('predictionText').textContent = ' Model is loading...';
+            } else {
+                document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
             }
-            return response.text();
-        })
-        .then(data => {
-            // Update the prediction text
-            const predictedLetter = data.trim();
-            document.getElementById('predictionText').textContent = ` ${predictedLetter}`;
-
-            // Call the function that updates the images based on the prediction
-            getLettersFromImages(predictedLetter);
-        })
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
         });
+    } else {
+        console.error('Camera handler not loaded properly');
+        document.getElementById('predictionText').textContent = ' Camera unavailable';
+    }
 }
 
 function updateImageStyles() {
@@ -92,8 +94,16 @@ function updateImageStyles() {
     }
 }
 
-// Activate the prediction function every second
-setInterval(predict, 1500);
+// Activate the prediction function every 1.5 seconds
+let predictionInterval = null;
+
+// Start prediction when the page is loaded and the camera is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for the camera to initialize
+    setTimeout(function() {
+        predictionInterval = setInterval(predict, 1500);
+    }, 2000);
+});
 
 function startIntro() {
     const intro = introJs();

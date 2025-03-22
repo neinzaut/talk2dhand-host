@@ -4,11 +4,19 @@ let correctCount = 0;
 let wrongCount = 0;
 let totalGuesses = 0;
 let errors = [];
+let predictionInterval;
 
 window.onload = function() {
     showEntryPopup(); // Display the entry popup on page load
     document.getElementById('startContainer').style.display = 'block';
     document.getElementById('startButton').onclick = startTest;
+    
+    // Initialize the camera
+    initializeCamera().then(() => {
+        console.log("Camera initialized successfully");
+    }).catch(error => {
+        console.error("Error initializing camera:", error);
+    });
 }
 
 // function showEntryPopup() {
@@ -65,7 +73,7 @@ function startCountdown() {
         // Stop the countdown when time runs out
         if (timeLeft < 0) {
             clearInterval(countdown);
-            captureImage(); // Call the function to capture the image
+            captureAndPredict(); // Call the function to capture and predict
         }
 
     }, 1000);
@@ -84,64 +92,75 @@ function updateTimerStyle(timeLeft) {
     }
 }
 
-function captureImage() {
-    fetch('/capture')
-    .then(response => response.json())
-    .then(data => {
-        if (data.image) {
-            let capturedImage = document.getElementById('capturedImage');
-            capturedImage.src = 'data:image/jpeg;base64,' + data.image;
-            capturedImage.style.display = 'none';
-            predictedCharacter = data.prediction; // Prediction from the model
-            document.getElementById('predictionResult').innerText = predictedCharacter;
-            sendPrediction();
-        } else {
-            alert("Error capturing the image");
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+function captureAndPredict() {
+    // Use client-side camera to capture and make prediction
+    sendImageForPrediction()
+        .then(response => {
+            if (response.status === "success") {
+                predictedCharacter = response.prediction;
+                document.getElementById('predictionResult').innerText = predictedCharacter;
+                
+                // Store the captured image base64 for error tracking
+                const canvas = document.getElementById('canvas');
+                const capturedImage = document.getElementById('capturedImage');
+                capturedImage.src = canvas.toDataURL('image/jpeg');
+                capturedImage.style.display = 'none';
+                
+                sendPrediction();
+            } else {
+                console.error("Prediction error:", response.message);
+                document.getElementById('predictionResult').innerText = "Error: " + response.message;
+                
+                // Continue with the test even in case of error
+                totalGuesses++;
+                if (totalGuesses >= 3) {
+                    showEndGamePopup();
+                } else {
+                    startCountdown();
+                    getRandomCharacter();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('predictionResult').innerText = "Error: Failed to get prediction";
+            
+            // Continue with the test even in case of error
+            totalGuesses++;
+            if (totalGuesses >= 3) {
+                showEndGamePopup();
+            } else {
+                startCountdown();
+                getRandomCharacter();
+            }
+        });
 }
 
 function sendPrediction() {
     const correctCharacter = document.getElementById('randomCharacter').innerText; // The correct value from the randomization
 
-    fetch('/check_prediction', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ predicted_character: predictedCharacter })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (correctCharacter === predictedCharacter) {
-            correctCount++;
-            document.getElementById('correctCount').innerText = correctCount;
-        } else {
-            wrongCount++;
-            document.getElementById('wrongCount').innerText = wrongCount;
+    if (correctCharacter === predictedCharacter) {
+        correctCount++;
+        document.getElementById('correctCount').innerText = correctCount;
+    } else {
+        wrongCount++;
+        document.getElementById('wrongCount').innerText = wrongCount;
 
-            // Save image and data about the error
-            errors.push({
-                image: document.getElementById('capturedImage').src,
-                correctCharacter: correctCharacter, // The value that was randomized
-                predictedCharacter: predictedCharacter // The value that was predicted
-            });
-        }
+        // Save image and data about the error
+        errors.push({
+            image: document.getElementById('capturedImage').src,
+            correctCharacter: correctCharacter, // The value that was randomized
+            predictedCharacter: predictedCharacter // The value that was predicted
+        });
+    }
 
-        totalGuesses++;
-        if (totalGuesses >= 3) {
-            showEndGamePopup();
-        } else {
-            startCountdown();
-            getRandomCharacter();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+    totalGuesses++;
+    if (totalGuesses >= 3) {
+        showEndGamePopup();
+    } else {
+        startCountdown();
+        getRandomCharacter();
+    }
 }
 
 function showEndGamePopup() {
