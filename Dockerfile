@@ -24,5 +24,5 @@ COPY . .
 # Make sure the port is set from the environment
 ENV PORT=10000
 
-# Command to run the app
-CMD gunicorn --bind 0.0.0.0:$PORT app:app 
+# Command to run the app with increased timeout
+CMD gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 8 app:app 

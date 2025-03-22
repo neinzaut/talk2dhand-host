@@ -7,4 +7,10 @@ services:
     envVars:
       - key: PORT
         value: 10000
-    healthCheckPath: / 
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - app.py
+        - templates/**
+        - static/**
+        - "hand sign model cnn tensorflow/hand_landmarks.h5" 

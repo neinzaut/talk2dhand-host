@@ -19,6 +19,7 @@ import speech_recognition as sr
 from PIL import Image
 import random
 import base64
+import threading
 
 # Configure TensorFlow logging
 tf.get_logger().setLevel('ERROR')
@@ -33,20 +34,36 @@ classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
            'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
            'U', 'V', 'W', 'X', 'Y', 'Z']
 
-# Configure model loading with explicit signatures
-@tf.function(experimental_relax_shapes=True)
-def load_model_with_signatures(model_path):
-    return load_model(model_path)
-
 # MediaPipe settings for hand landmark detection
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands()
 mp_drawing = mp.solutions.drawing_utils
 
-# Load the trained model for hand sign recognition
-model = load_model(r"hand sign model cnn tensorflow\hand_landmarks.h5")  # Path to the model file
-
+# Global variables
+model = None
+model_loaded = False
+model_loading = False
 recognizer = sr.Recognizer()
+
+# Function to load the model in a separate thread
+def load_model_async():
+    global model, model_loaded, model_loading
+    model_loading = True
+    try:
+        # Fix the path for cross-platform compatibility
+        model_path = os.path.join("hand sign model cnn tensorflow", "hand_landmarks.h5")
+        print(f"Loading model from: {model_path}")
+        # Using TF default options to prevent memory leaks
+        model = load_model(model_path)
+        model_loaded = True
+        print("Model loaded successfully!")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+    finally:
+        model_loading = False
+
+# Start model loading in background thread
+threading.Thread(target=load_model_async).start()
 
 word_to_number = {
     "one": 1,
@@ -148,9 +165,21 @@ def video_feed():
 
 @app.route('/predict', methods=['POST', 'GET'])
 def predict():
+    global model_loaded, model_loading
+    
+    # Check if model is still loading
+    if not model_loaded:
+        if model_loading:
+            return jsonify({'status': 'loading', 'message': 'Model is still loading, please try again in a moment'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Model failed to load'})
+    
+    if not camera_available:
+        return jsonify({'status': 'error', 'message': 'Camera not available'})
+        
     success, frame = camera.read()
     if not success:
-        return 'strange thing'
+        return jsonify({'status': 'error', 'message': 'Failed to capture frame'})
     else:
         # Convert the frame from BGR to RGB for MediaPipe
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -175,32 +204,9 @@ def predict():
 
                 # Display the corresponding character based on the prediction
                 predicted_character = classes[predicted_class]
-            return (f'{predicted_character}')
+            return jsonify({'status': 'success', 'prediction': predicted_character})
         else:
-            return  predicted_character
-
-    # Check if coordinates are a list with values
-    if not isinstance(coordinates, list) or len(coordinates) == 0:
-        return jsonify({'error': 'Invalid input format. Expected a list of coordinates.'}), 400
-
-    # Convert coordinates to a NumPy array in the format expected by the model
-    input_data = np.array([coordinates], dtype=np.float32)
-    print("Input data for model:", input_data)  # Log - print the array sent to the model
-
-    try:
-        # Run the model on the coordinates
-        prediction = model.predict(input_data)
-        print("Model prediction:", prediction)  # Log - print the model's prediction results
-
-        # Assume the model returns the index with the highest probability
-        index = np.argmax(prediction)
-        print("Predicted index:", index)  # Log - print the predicted index
-
-        return jsonify({'index': int(index)})
-
-    except Exception as e:
-        print("Error during prediction:", e)  # Log - print the error if any
-        return jsonify({'error': 'Prediction failed'}), 500
+            return jsonify({'status': 'success', 'prediction': 'No hand detected'})
 
 @app.route('/speech_recognition', methods=['GET'])
 def speech_recognition():
@@ -300,6 +306,15 @@ def save_name():
 
 @app.route('/capture')
 def capture():
+    global model_loaded, model_loading
+    
+    # Check if model is still loading
+    if not model_loaded:
+        if model_loading:
+            return jsonify({'status': 'loading', 'message': 'Model is still loading, please try again in a moment'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Model failed to load'})
+    
     if not camera_available:
         return jsonify({'error': 'Camera not available in this environment', 'image': '', 'prediction': 'No camera'})
     
@@ -312,6 +327,8 @@ def capture():
 
         # Detect hands in the frame
         results = hands.process(frame_rgb)
+        
+        predicted_character = 'No hand detected'
 
         # Draw hand landmarks on the frame even if no hands are detected
         if results.multi_hand_landmarks:
@@ -341,7 +358,7 @@ def capture():
 
         img_str = base64.b64encode(buffer).decode('utf-8')  # Convert the image to base64 for display in HTML
         # Return the image and prediction to the client
-        return jsonify({'image': img_str, 'prediction': predicted_character if results.multi_hand_landmarks else 'No hand detected'})
+        return jsonify({'image': img_str, 'prediction': predicted_character})
 
 @app.route('/random_character', methods=['GET'])
 def random_character_endpoint():
@@ -364,6 +381,16 @@ def check_prediction():
 @app.route('/video_feed_pilot')
 def video_feed_pilot():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Render"""
+    return jsonify({
+        'status': 'up',
+        'model_loaded': model_loaded,
+        'model_loading': model_loading,
+        'camera_available': camera_available
+    })
 
 if __name__ == '__main__':
     try:
