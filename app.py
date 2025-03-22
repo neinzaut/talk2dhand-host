@@ -21,18 +21,6 @@ import random
 import base64
 import threading
 import time
-import logging
-from config import active_config
-
-# Configure Flask application logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger("Talk2DHand")
 
 # Configure TensorFlow logging
 tf.get_logger().setLevel('ERROR')
@@ -40,8 +28,6 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config.from_object(active_config)
-logger.info(f"Starting application with configuration: {active_config.__name__}")
 
 # Add CORS support
 @app.after_request
@@ -57,42 +43,29 @@ classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
            'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
            'U', 'V', 'W', 'X', 'Y', 'Z']
 
-# Initialize models and camera
+# MediaPipe settings for hand landmark detection
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands()
+mp_drawing = mp.solutions.drawing_utils
+
+# Global variables
 model = None
 model_loaded = False
 model_loading = False
 recognizer = sr.Recognizer()
-use_mock_camera = app.config['MOCK_CAMERA']
-camera_index = app.config['CAMERA_INDEX']
-model_path = app.config['MODEL_PATH']
+use_mock_camera = True  # Set to True when deployed on Render or other server environments
 
-logger.info(f"Camera configuration: Mock camera: {use_mock_camera}, Camera index: {camera_index}")
-logger.info(f"Model path: {model_path}")
-
-# Initialize MediaPipe
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(
-    max_num_hands=app.config['MAX_NUM_HANDS'],
-    min_detection_confidence=app.config['MIN_DETECTION_CONFIDENCE'],
-    min_tracking_confidence=app.config['MIN_TRACKING_CONFIDENCE']
-)
-mp_drawing = mp.solutions.drawing_utils
-
-# If not using mock camera, initialize video capture
-if not use_mock_camera:
-    try:
-        cap = cv2.VideoCapture(camera_index)
-        if not cap.isOpened():
-            logger.error(f"Failed to open camera at index {camera_index}")
-            use_mock_camera = True
-        else:
-            logger.info(f"Successfully opened camera at index {camera_index}")
-    except Exception as e:
-        logger.error(f"Error initializing camera: {e}")
-        use_mock_camera = True
-else:
-    logger.info("Using mock camera as configured")
-    cap = None
+# Try to initialize the camera, fall back to mock if not available
+try:
+    cap = cv2.VideoCapture(0)
+    if cap.isOpened():
+        use_mock_camera = False
+        cap.release()  # We'll reopen it when needed
+    else:
+        print("Camera not available, using mock camera")
+except Exception as e:
+    print(f"Error accessing camera: {e}")
+    print("Using mock camera instead")
 
 # Create a mock frame for environments without a camera
 mock_frame = np.ones((480, 640, 3), dtype=np.uint8) * 255  # White background
@@ -101,38 +74,44 @@ cv2.putText(mock_frame, "Please use client-side camera", (80, 280), cv2.FONT_HER
 
 # Function to load the model in a separate thread
 def load_model_async():
-    """Load the model asynchronously in a background thread"""
     global model, model_loaded, model_loading
     model_loading = True
-    
     try:
-        logger.info(f"Loading model from: {app.config['MODEL_PATH']}")
-        # Try to load the model
+        # Fix the path for cross-platform compatibility
+        model_path = os.path.join("hand sign model cnn tensorflow", "hand_landmarks.h5")
+        print(f"Loading model from: {model_path}")
+        
+        # Add detailed logging
+        print(f"TensorFlow version: {tf.version.VERSION}")
+        print(f"Model path exists: {os.path.exists(model_path)}")
+        print(f"Model file size: {os.path.getsize(model_path)} bytes")
+        
+        # Trying the approach from the old working code
         try:
-            model = load_model(app.config['MODEL_PATH'])
-            logger.info("Model loaded successfully using tf.keras.models.load_model")
+            print("Attempting to load model directly...")
+            model = load_model(model_path)
         except Exception as e:
-            logger.warning(f"Direct model loading failed: {e}, trying alternative approach...")
+            print(f"Direct model loading failed: {e}, trying alternative approach...")
             # Try using tf.keras.models.load_model explicitly
             import tensorflow.keras.models
-            model = tensorflow.keras.models.load_model(app.config['MODEL_PATH'])
+            model = tensorflow.keras.models.load_model(model_path)
             
         # Verify model loaded correctly
-        logger.info(f"Model loaded successfully! Model type: {type(model)}")
-        logger.info(f"Model summary: {model.summary()}")
+        print(f"Model loaded successfully! Model type: {type(model)}")
+        print(f"Model summary: {model.summary()}")
         
         # Test a simple prediction to ensure model works
-        logger.info("Testing model prediction with random data...")
+        print("Testing model prediction with random data...")
         test_data = np.random.rand(1, 21, 3)  # Random test data in the expected shape
         test_prediction = model.predict(test_data)
-        logger.info(f"Test prediction shape: {test_prediction.shape}")
-        logger.info(f"Test prediction argmax: {np.argmax(test_prediction, axis=1)[0]}")
+        print(f"Test prediction shape: {test_prediction.shape}")
+        print(f"Test prediction argmax: {np.argmax(test_prediction, axis=1)[0]}")
         
         model_loaded = True
-        logger.info("Model loaded and ready for predictions!")
+        print("Model loaded and ready for predictions!")
     except Exception as e:
-        logger.error(f"Error loading model: {e}")
-        logger.error("Detailed error:")
+        print(f"Error loading model: {e}")
+        print("Detailed error:")
         import traceback
         traceback.print_exc()
         model_loaded = False
@@ -140,7 +119,7 @@ def load_model_async():
         model_loading = False
 
 # Start model loading in background thread
-logger.info("Starting model loading in background thread...")
+print("Starting model loading in background thread...")
 threading.Thread(target=load_model_async).start()
 
 word_to_number = {
@@ -460,96 +439,83 @@ def video_feed_pilot():
 @app.route('/health')
 def health_check():
     """Health check endpoint for Render"""
-    config_info = {
-        'debug': app.config['DEBUG'],
-        'testing': app.config['TESTING'],
-        'environment': os.environ.get('FLASK_ENV', 'development'),
-        'mock_camera': app.config['MOCK_CAMERA'],
-        'camera_index': app.config['CAMERA_INDEX'],
-    }
-    
     return jsonify({
         'status': 'up',
         'model_loaded': model_loaded,
         'model_loading': model_loading,
-        'camera_available': not use_mock_camera,
-        'config': config_info
+        'camera_available': not use_mock_camera
     })
 
-@app.route('/predict_image', methods=['POST', 'OPTIONS'])
+@app.route('/predict_image', methods=['POST'])
 def predict_image():
     """Process an image sent from the client-side camera and predict the sign"""
     global model_loaded, model_loading, model
     
-    # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
-        return '', 204
-    
-    logger.info("Predict image endpoint called")
+    print("Predict image endpoint called")
     
     # Check if model is still loading
     if not model_loaded:
         if model_loading:
-            logger.warning("Model is still loading when prediction was attempted")
+            print("Model is still loading when prediction was attempted")
             return jsonify({'status': 'loading', 'message': 'Model is still loading, please try again in a moment'})
         else:
-            logger.error("Model failed to load, prediction cannot proceed")
+            print("Model failed to load, prediction cannot proceed")
             return jsonify({'status': 'error', 'message': 'Model failed to load'})
     
     # Get the image data from the request
     try:
         data = request.get_json()
-        logger.info("Request data received: %s", type(data))
+        print("Request data received:", type(data))
         
         if not data or 'image' not in data:
-            logger.warning("No image data received in request")
+            print("No image data received in request")
             return jsonify({'status': 'error', 'message': 'No image data received'})
         
         # Convert base64 image to numpy array
-        logger.info("Processing image for prediction")
+        print("Processing image for prediction")
         image_data = base64.b64decode(data['image'])
         np_arr = np.frombuffer(image_data, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        logger.info(f"Image decoded, shape: {frame.shape}")
+        print(f"Image decoded, shape: {frame.shape}")
         
-        # Process the image with MediaPipe
+        # Process the image with MediaPipe - similar to old working code
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(frame_rgb)
         
         if not results.multi_hand_landmarks:
-            logger.info("No hand landmarks detected in image")
+            print("No hand landmarks detected in image")
             return jsonify({
                 'status': 'success', 
                 'prediction': 'No hand detected',
                 'image': base64.b64encode(cv2.imencode('.jpg', frame)[1].tobytes()).decode('utf-8')
             })
         
-        # Process hand landmarks
-        logger.info("Hand landmarks detected, processing prediction")
+        # Process hand landmarks - following the exact pattern from old working code
+        print("Hand landmarks detected, processing prediction")
         for hand_landmarks in results.multi_hand_landmarks:
             # Draw landmarks on the image first
             mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             
-            # Collect hand landmarks
+            # Collect hand landmarks exactly as in old working code
             landmarks = []
             for landmark in hand_landmarks.landmark:
                 landmarks.append([landmark.x, landmark.y, landmark.z])
             
-            logger.info(f"Collected {len(landmarks)} landmarks for prediction")
+            print(f"Collected {len(landmarks)} landmarks for prediction")
             
-            # Convert landmarks to input format for model
+            # Convert landmarks to input format for model - exactly as in old working code
             input_data = np.array(landmarks).reshape(1, 21, 3)
-            logger.info(f"Input data shape: {input_data.shape}")
+            print(f"Input data shape: {input_data.shape}")
             
-            # Make prediction
+            # Make prediction - exactly as in old working code
             try:
-                logger.info("Running model prediction...")
+                print("Running model prediction...")
                 prediction = model.predict(input_data)
-                logger.info(f"Raw prediction shape: {prediction.shape}")
+                print(f"Raw prediction shape: {prediction.shape}")
                 predicted_class = np.argmax(prediction, axis=1)[0]
-                logger.info(f"Predicted class index: {predicted_class}")
+                print(f"Predicted class index: {predicted_class}")
                 predicted_character = classes[predicted_class]
-                logger.info(f"Predicted character: {predicted_character}")
+                print(f"Predicted character: {predicted_character}")
                 
                 # Add text to the image
                 cv2.putText(frame, predicted_character, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
@@ -564,7 +530,7 @@ def predict_image():
                     'image': img_str
                 })
             except Exception as e:
-                logger.error(f"Error during model prediction: {e}")
+                print(f"Error during model prediction: {e}")
                 import traceback
                 traceback.print_exc()
                 return jsonify({'status': 'error', 'message': f'Model prediction error: {str(e)}'})
@@ -576,7 +542,7 @@ def predict_image():
         })
     
     except Exception as e:
-        logger.error(f"Error processing image: {e}")
+        print(f"Error processing image: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'status': 'error', 'message': f'Error processing image: {str(e)}'})
