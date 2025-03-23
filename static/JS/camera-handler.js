@@ -328,6 +328,11 @@ function sendImageForPrediction() {
             return;
         }
         
+        // Debug - Check MediaPipe status
+        console.log("DEBUG - sendImageForPrediction:");
+        console.log("- MediaPipe initialized:", mediaPipeInitialized);
+        console.log("- Hands object available:", hands !== null);
+        
         // Capture the image
         const imageData = captureImage();
         if (!imageData) {
@@ -338,6 +343,24 @@ function sendImageForPrediction() {
         
         console.log("Image captured successfully, preparing to send to server");
         
+        // Debug - Check if the canvas contains landmarks
+        if (canvasContext && canvasElement) {
+            try {
+                // Draw a marker to visualize that we're capturing this frame
+                const originalData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                canvasContext.fillStyle = "red";
+                canvasContext.fillRect(0, 0, 10, 10);
+                
+                // Return to original data
+                canvasContext.putImageData(originalData, 0, 0);
+                
+                console.log("Canvas dimensions:", canvasElement.width, "x", canvasElement.height);
+                console.log("Canvas context type:", canvasContext.constructor.name);
+            } catch (e) {
+                console.error("Error accessing canvas:", e);
+            }
+        }
+        
         // Remove the data URL prefix to get just the base64 data
         const base64Data = imageData.split(',')[1];
         
@@ -345,6 +368,12 @@ function sendImageForPrediction() {
         const baseUrl = window.location.origin;
         const endpointUrl = `${baseUrl}/predict_image`;
         console.log(`Sending prediction request to: ${endpointUrl}`);
+        
+        // Debug - Log prediction request details
+        console.log("Prediction request details:");
+        console.log("- Base URL:", baseUrl);
+        console.log("- Endpoint:", endpointUrl);
+        console.log("- Image data size:", base64Data ? base64Data.length : 0, "bytes");
         
         // Send the image data to the server
         console.log("Sending image to server for prediction...");
@@ -365,6 +394,17 @@ function sendImageForPrediction() {
         })
         .then(data => {
             console.log("Prediction result:", data);
+            
+            // Debug - Add more information to responses for clearer error tracking
+            if (data && data.status === 'error') {
+                data.endpoint = endpointUrl;
+                data.client_info = {
+                    mediaPipeInitialized: mediaPipeInitialized,
+                    imageAvailable: imageData ? true : false,
+                    canvasAvailable: canvasElement ? true : false
+                };
+            }
+            
             resolve(data);
         })
         .catch(error => {
@@ -372,7 +412,12 @@ function sendImageForPrediction() {
             resolve({ 
                 status: 'error', 
                 message: 'Network error: ' + error.message,
-                endpoint: endpointUrl 
+                endpoint: endpointUrl,
+                client_info: {
+                    mediaPipeInitialized: mediaPipeInitialized,
+                    imageAvailable: imageData ? true : false,
+                    canvasAvailable: canvasElement ? true : false
+                }
             });
         });
     });

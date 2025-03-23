@@ -15,7 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     
+    <!-- Load camera handler first so it's available to the page -->
     <script src="/static/JS/camera-handler.js"></script>
+    
     <style>
         /* Additional CSS for camera elements */
         #webcam {
@@ -24,24 +26,70 @@
             border-radius: 10px;
             border: 2px solid #304C89;
         }
+        #canvas {
+            width: 320px; 
+            height: 240px;
+            display: none;
+        }
         .status {
             margin-top: 10px;
             padding: 8px;
             border-radius: 5px;
             text-align: center;
-            font-weight: bold;
+            display: none;
         }
         .status.success {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
         }
         .status.error {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
         }
         .status.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
+            background-color: #d9edf7;
+            color: #31708f;
+            border: 1px solid #bce8f1;
+        }
+        #predictionContainer {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .live-detection {
+            font-size: 32px;
+            font-weight: bold;
+            display: block;
+            margin: 8px 0;
+            color: #304C89;
+        }
+        .detection-indicator {
+            display: inline-block;
+            font-size: 12px;
+            background-color: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .detection-indicator::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
         }
     </style>
 </head>
@@ -94,14 +142,19 @@
         </div>
 
         <div id="camera">
-            <video id="webcam" autoplay></video>
-            <canvas id="canvas" style="display:none;"></canvas>
-            <img id="capturedImage">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas" width="320" height="240"></canvas>
+            <img id="capturedImage" style="display:none;">
             <div id="startContainer">
                 <button id="startButton">Start</button>
             </div>
+            <div id="cameraStatus" style="display:none;"></div>
         </div>
         <div class="timer-and-counters-container">
+            <div id="predictionContainer">
+                <p>Detected sign: <span id="predictionResult" class="live-detection">Initializing...</span></p>
+                <span class="detection-indicator">Real-time detection active</span>
+            </div>
         </div>
     </div>
 
@@ -113,7 +166,7 @@
     <div id="endGamePopup" style="display: none;">
         <div class="popEndContainer">
             <h2 style="font-size: 40px; color: #0073FF; font-weight: 400;"> <strong>THE TEST IS OVER.</strong></h2>
-            <h2 id="scoreDisplay" style="font-size: 40px;"></h2> Display the score.
+            <h2 id="scoreDisplay" style="font-size: 40px;"></h2>
             <img id="resultImage" src="" alt="Result Image" style="display: none; width: 200px;" />
             <div class="answer">
                 <div class="counter correct" style="color: #2B815C; border-radius: 10px;">
@@ -123,7 +176,7 @@
                     <img src="/static/images/sad.png" width="40px" height="40px"> <span id="wrongCount">0</span>
                 </div>
             </div>
-            <p>Display the images.</p>
+            <p>Results with errors:</p>
             <div class="errors-container" style="display: flex; flex-wrap: wrap; gap: 20px;">
                 <!-- Errors will be added here -->
             </div>
