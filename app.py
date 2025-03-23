@@ -241,7 +241,7 @@ def video_feed():
 
 @app.route('/predict', methods=['POST', 'GET'])
 def predict():
-    global model_loaded, model_loading
+    global model_loaded, model_loading, hands
     
     # Check if model is still loading
     if not model_loaded:
@@ -269,7 +269,6 @@ def predict():
             if "Packet timestamp mismatch" in str(e):
                 # If we get a timestamp error, recreate the hands object
                 print("Handling MediaPipe timestamp error by recreating hands object")
-                global hands
                 hands = mp_hands.Hands(
                     static_image_mode=True,  # Use True for individual image processing
                     max_num_hands=2,
@@ -402,7 +401,7 @@ def save_name():
 
 @app.route('/capture')
 def capture():
-    global model_loaded, model_loading
+    global model_loaded, model_loading, hands
     
     # Check if model is still loading
     if not model_loaded:
@@ -432,7 +431,6 @@ def capture():
             if "Packet timestamp mismatch" in str(e):
                 # If we get a timestamp error, recreate the hands object
                 print("Handling MediaPipe timestamp error by recreating hands object")
-                global hands
                 hands = mp_hands.Hands(
                     static_image_mode=True,  # Use True for individual image processing
                     max_num_hands=2,
@@ -520,7 +518,7 @@ def health_check():
 @app.route('/predict_image', methods=['POST'])
 def predict_image():
     """Process an image sent from the client-side camera and predict the sign"""
-    global model_loaded, model_loading, model, last_process_timestamp
+    global model_loaded, model_loading, model, last_process_timestamp, hands
     
     print("Predict image endpoint called")
     
@@ -563,7 +561,6 @@ def predict_image():
             if "Packet timestamp mismatch" in str(e):
                 # If we get a timestamp error, recreate the hands object
                 print("Handling MediaPipe timestamp error by recreating hands object")
-                global hands
                 hands = mp_hands.Hands(
                     static_image_mode=True,  # Use True for individual image processing
                     max_num_hands=2,
