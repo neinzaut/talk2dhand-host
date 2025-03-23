@@ -45,8 +45,16 @@ function realtimePredict() {
         } else if (data.status === 'loading') {
             document.getElementById('predictionResult').innerText = "Model loading...";
         } else {
-            // Don't show errors in real-time preview
-            document.getElementById('predictionResult').innerText = "Detecting...";
+            // Check for MediaPipe timestamp errors
+            if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                console.warn("MediaPipe timestamp error detected - will retry automatically");
+                document.getElementById('predictionResult').innerText = "Detecting...";
+                // The server will handle the MediaPipe reinit - no need to do anything special here
+            } else {
+                // Don't show errors in real-time preview
+                document.getElementById('predictionResult').innerText = "Detecting...";
+                console.error("Prediction error:", data.message);
+            }
         }
     })
     .catch(error => {
@@ -396,7 +404,17 @@ function captureAndPredict() {
                 captureAndPredict();
             }, 2000);
         } else {
-            handlePredictionError(data);
+            // Handle specific MediaPipe timestamp errors
+            if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                console.warn("MediaPipe timestamp error detected - trying again...");
+                document.getElementById('predictionResult').innerText = "Retrying...";
+                // Try once more after a short delay
+                setTimeout(() => {
+                    captureAndPredict();
+                }, 1000);
+            } else {
+                handlePredictionError(data);
+            }
         }
     })
     .catch(error => {
@@ -414,8 +432,21 @@ function captureAndPredict() {
 function handlePredictionError(response) {
     console.error("Prediction failed:", response);
     
+    // Extract error message
     const errorMsg = response && response.message ? response.message : "Unknown error";
     document.getElementById('predictionResult').innerText = "Error: " + errorMsg;
+    
+    // For MediaPipe timestamp errors, let's not count it as wrong and try again
+    if (errorMsg.includes("Packet timestamp mismatch")) {
+        console.log("MediaPipe timestamp error - will retry");
+        
+        // Try again after a short delay
+        setTimeout(() => {
+            captureAndPredict();
+        }, 1000);
+        
+        return; // Don't count this as a wrong answer
+    }
     
     // Count as wrong answer but don't add extensive error-tracking that might slow down
     wrongCount++;

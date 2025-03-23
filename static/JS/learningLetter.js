@@ -36,13 +36,27 @@ function predict() {
                     console.log("Model is still loading");
                     document.getElementById('predictionText').textContent = ' Model is loading...';
                 } else {
-                    console.error("Prediction error:", data.message);
-                    document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
+                    // Handle MediaPipe timestamp errors specifically
+                    if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                        console.warn("MediaPipe timestamp error detected - will retry automatically");
+                        document.getElementById('predictionText').textContent = ' Detecting...';
+                        // The server will handle the MediaPipe reinit - no need to do anything special here
+                    } else {
+                        console.error("Prediction error:", data.message);
+                        document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
+                    }
                 }
             })
             .catch(error => {
                 console.error("Error in prediction:", error);
-                document.getElementById('predictionText').textContent = ' Error requesting prediction';
+                // Check if the error might be related to MediaPipe timestamps
+                if (error.message && error.message.includes("Packet timestamp mismatch")) {
+                    document.getElementById('predictionText').textContent = ' Retrying...';
+                    // Wait a moment and try again
+                    setTimeout(predict, 1000);
+                } else {
+                    document.getElementById('predictionText').textContent = ' Error requesting prediction';
+                }
             });
     } else {
         console.error('Camera handler not loaded properly');

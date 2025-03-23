@@ -45,7 +45,13 @@ classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 
 # MediaPipe settings for hand landmark detection
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands()
+# Initialize hands with a custom stream handler to avoid timestamp issues
+hands = mp_hands.Hands(
+    static_image_mode=False,  # Set to False for video streams
+    max_num_hands=2,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
 mp_drawing = mp.solutions.drawing_utils
 
 # Global variables
@@ -54,6 +60,8 @@ model_loaded = False
 model_loading = False
 recognizer = sr.Recognizer()
 use_mock_camera = True  # Set to True when deployed on Render or other server environments
+# Store a timestamp for MediaPipe processing to avoid conflicts
+last_process_timestamp = 0
 
 # Try to initialize the camera, fall back to mock if not available
 try:
@@ -163,9 +171,23 @@ def generate_frames():
             else:
                 # Convert the frame from BGR to RGB for MediaPipe
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_rgb.flags.writeable = False  # Performance optimization
 
-                # Detect hands in the frame
-                results = hands.process(frame_rgb)
+                # Detect hands in the frame - with error handling for timestamp issues
+                try:
+                    results = hands.process(frame_rgb)
+                    frame_rgb.flags.writeable = True
+                except ValueError as e:
+                    if "Packet timestamp mismatch" in str(e):
+                        # Just draw the frame without hand landmarks if there's a timestamp error
+                        ret, buffer = cv2.imencode('.jpg', frame)
+                        frame = buffer.tobytes()
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                        continue
+                    else:
+                        # Skip this frame if there's a different error
+                        continue
 
                 # Draw hand landmarks on the frame
                 if results.multi_hand_landmarks:
@@ -237,9 +259,29 @@ def predict():
     else:
         # Convert the frame from BGR to RGB for MediaPipe
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb.flags.writeable = False  # Performance optimization
 
-        # Detect hands in the frame
-        results = hands.process(frame_rgb)
+        # Detect hands in the frame - with error handling for timestamp issues
+        try:
+            results = hands.process(frame_rgb)
+            frame_rgb.flags.writeable = True
+        except ValueError as e:
+            if "Packet timestamp mismatch" in str(e):
+                # If we get a timestamp error, recreate the hands object
+                print("Handling MediaPipe timestamp error by recreating hands object")
+                global hands
+                hands = mp_hands.Hands(
+                    static_image_mode=True,  # Use True for individual image processing
+                    max_num_hands=2,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+                # Try again with the new hands object
+                results = hands.process(frame_rgb)
+                frame_rgb.flags.writeable = True
+            else:
+                # If it's a different ValueError, re-raise it
+                return jsonify({'status': 'error', 'message': f'MediaPipe error: {str(e)}'})
 
         # Draw hand landmarks on the frame
         if results.multi_hand_landmarks:
@@ -378,11 +420,40 @@ def capture():
     else:
         # Convert the frame from BGR to RGB for MediaPipe
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Detect hands in the frame
-        results = hands.process(frame_rgb)
+        frame_rgb.flags.writeable = False  # Performance optimization
         
         predicted_character = 'No hand detected'
+
+        # Detect hands in the frame - with error handling for timestamp issues
+        try:
+            results = hands.process(frame_rgb)
+            frame_rgb.flags.writeable = True
+        except ValueError as e:
+            if "Packet timestamp mismatch" in str(e):
+                # If we get a timestamp error, recreate the hands object
+                print("Handling MediaPipe timestamp error by recreating hands object")
+                global hands
+                hands = mp_hands.Hands(
+                    static_image_mode=True,  # Use True for individual image processing
+                    max_num_hands=2,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+                # Try again with the new hands object
+                try:
+                    results = hands.process(frame_rgb)
+                    frame_rgb.flags.writeable = True
+                except Exception as e2:
+                    print(f"Second attempt also failed: {e2}")
+                    # Return the frame without processing if both attempts fail
+                    ret, buffer = cv2.imencode('.jpg', frame)
+                    img_str = base64.b64encode(buffer).decode('utf-8')
+                    return jsonify({'image': img_str, 'prediction': 'Processing error'})
+            else:
+                # If it's a different ValueError, return the error
+                ret, buffer = cv2.imencode('.jpg', frame)
+                img_str = base64.b64encode(buffer).decode('utf-8')
+                return jsonify({'image': img_str, 'prediction': f'Error: {str(e)}'})
 
         # Draw hand landmarks on the frame even if no hands are detected
         if results.multi_hand_landmarks:
@@ -449,7 +520,7 @@ def health_check():
 @app.route('/predict_image', methods=['POST'])
 def predict_image():
     """Process an image sent from the client-side camera and predict the sign"""
-    global model_loaded, model_loading, model
+    global model_loaded, model_loading, model, last_process_timestamp
     
     print("Predict image endpoint called")
     
@@ -478,9 +549,33 @@ def predict_image():
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         print(f"Image decoded, shape: {frame.shape}")
         
-        # Process the image with MediaPipe - similar to old working code
+        # Process the image with MediaPipe - with timestamp handling for deployment
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(frame_rgb)
+        
+        # Use static_image_mode=True for individual images to avoid timestamp issues
+        frame_rgb.flags.writeable = False  # Performance optimization
+        
+        try:
+            # Process with MediaPipe (treating each image independently)
+            results = hands.process(frame_rgb)
+            frame_rgb.flags.writeable = True  # Make writable again for drawing
+        except ValueError as e:
+            if "Packet timestamp mismatch" in str(e):
+                # If we get a timestamp error, recreate the hands object
+                print("Handling MediaPipe timestamp error by recreating hands object")
+                global hands
+                hands = mp_hands.Hands(
+                    static_image_mode=True,  # Use True for individual image processing
+                    max_num_hands=2,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+                # Try again with the new hands object
+                results = hands.process(frame_rgb)
+                frame_rgb.flags.writeable = True
+            else:
+                # If it's a different ValueError, re-raise it
+                raise
         
         if not results.multi_hand_landmarks:
             print("No hand landmarks detected in image")

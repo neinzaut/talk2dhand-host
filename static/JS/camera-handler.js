@@ -319,107 +319,70 @@ function startManualMediaPipeProcessing() {
     requestAnimationFrame(processFrame);
 }
 
-// Send the captured image to the server for prediction (Promise-based)
+// Send the current camera image to the server for prediction
 function sendImageForPrediction() {
     return new Promise((resolve, reject) => {
+        // Check if camera is running
         if (!streamStarted) {
-            console.error("Cannot predict: Camera not available");
-            resolve({ status: 'error', message: 'Camera not available' });
+            console.error('Camera not started');
+            reject(new Error('Camera not started'));
             return;
         }
         
-        // Debug - Check MediaPipe status
-        console.log("DEBUG - sendImageForPrediction:");
-        console.log("- MediaPipe initialized:", mediaPipeInitialized);
-        console.log("- Hands object available:", hands !== null);
-        
-        // Capture the image
-        const imageData = captureImage();
-        if (!imageData) {
-            console.error("Cannot predict: Failed to capture image");
-            resolve({ status: 'error', message: 'Failed to capture image' });
-            return;
-        }
-        
-        console.log("Image captured successfully, preparing to send to server");
-        
-        // Debug - Check if the canvas contains landmarks
-        if (canvasContext && canvasElement) {
-            try {
-                // Draw a marker to visualize that we're capturing this frame
-                const originalData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                canvasContext.fillStyle = "red";
-                canvasContext.fillRect(0, 0, 10, 10);
-                
-                // Return to original data
-                canvasContext.putImageData(originalData, 0, 0);
-                
-                console.log("Canvas dimensions:", canvasElement.width, "x", canvasElement.height);
-                console.log("Canvas context type:", canvasContext.constructor.name);
-            } catch (e) {
-                console.error("Error accessing canvas:", e);
-            }
-        }
-        
-        // Remove the data URL prefix to get just the base64 data
-        const base64Data = imageData.split(',')[1];
-        
-        // Construct the endpoint URL - handle both absolute and relative paths
-        const baseUrl = window.location.origin;
-        const endpointUrl = `${baseUrl}/predict_image`;
-        console.log(`Sending prediction request to: ${endpointUrl}`);
-        
-        // Debug - Log prediction request details
-        console.log("Prediction request details:");
-        console.log("- Base URL:", baseUrl);
-        console.log("- Endpoint:", endpointUrl);
-        console.log("- Image data size:", base64Data ? base64Data.length : 0, "bytes");
-        
-        // Send the image data to the server
-        console.log("Sending image to server for prediction...");
-        fetch(endpointUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ image: base64Data })
-        })
-        .then(response => {
-            console.log(`Server response status: ${response.status} ${response.statusText}`);
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-            }
-            console.log("Received response from server");
-            return response.json();
-        })
-        .then(data => {
-            console.log("Prediction result:", data);
+        try {
+            // Capture the current image from the camera
+            const imageData = captureImage();
             
-            // Debug - Add more information to responses for clearer error tracking
-            if (data && data.status === 'error') {
-                data.endpoint = endpointUrl;
-                data.client_info = {
-                    mediaPipeInitialized: mediaPipeInitialized,
-                    imageAvailable: imageData ? true : false,
-                    canvasAvailable: canvasElement ? true : false
-                };
+            if (!imageData) {
+                console.error('Failed to capture image');
+                reject(new Error('Failed to capture image'));
+                return;
             }
             
-            resolve(data);
-        })
-        .catch(error => {
-            console.error('Error sending image for prediction:', error);
-            resolve({ 
-                status: 'error', 
-                message: 'Network error: ' + error.message,
-                endpoint: endpointUrl,
-                client_info: {
-                    mediaPipeInitialized: mediaPipeInitialized,
-                    imageAvailable: imageData ? true : false,
-                    canvasAvailable: canvasElement ? true : false
+            // Extract the base64 data part of the data URL
+            const base64Data = imageData.split(',')[1];
+            
+            // Send the image data to the server for prediction
+            fetch('/predict_image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: base64Data })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 }
+                return response.json();
+            })
+            .then(data => {
+                // For MediaPipe timestamp errors, we can retry the request automatically
+                if (data.status === 'error' && 
+                    data.message && 
+                    data.message.includes("Packet timestamp mismatch")) {
+                    
+                    console.warn("MediaPipe timestamp error detected in camera-handler - retrying in 500ms");
+                    
+                    // Wait a short time and try again
+                    setTimeout(() => {
+                        sendImageForPrediction()
+                            .then(retryData => resolve(retryData))
+                            .catch(retryError => reject(retryError));
+                    }, 500);
+                } else {
+                    // Return the prediction data
+                    resolve(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error sending image for prediction:', error);
+                reject(error);
             });
-        });
+        } catch (error) {
+            console.error('Error capturing image:', error);
+            reject(error);
+        }
     });
 }
 
