@@ -16,7 +16,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     
+    <!-- Load camera handler first so it's available to the page -->
     <script src="/static/JS/camera-handler.js"></script>
+    
     <style>
         /* Additional CSS for camera elements */
         #webcam {
@@ -24,6 +26,11 @@
             max-width: 320px;
             border-radius: 10px;
             border: 2px solid #304C89;
+        }
+        #canvas {
+            width: 320px; 
+            height: 240px;
+            display: none;
         }
         .status {
             margin-top: 10px;
@@ -43,6 +50,37 @@
         .status.info {
             background-color: #d1ecf1;
             color: #0c5460;
+        }
+        #predictionText {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 5px;
+            text-align: center;
+        }
+        .detection-indicator {
+            display: inline-block;
+            font-size: 12px;
+            background-color: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+        .detection-indicator::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
         }
     </style>
 </head>
@@ -111,13 +149,35 @@
 
         <!-- Camera feed and prediction text -->
         <div id="camera">
-            <video id="webcam" autoplay></video>
-            <canvas id="canvas" style="display:none;"></canvas>
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas" width="320" height="240"></canvas>
+            <div id="cameraStatus" class="status info" style="display:none;">Initializing camera...</div>
         </div>
-        <p id="predictionText"></p>
+        <div id="predictionContainer">
+            <p id="predictionText">Initializing...</p>
+            <span class="detection-indicator">Real-time detection active</span>
+        </div>
     </div>
     </div>
     <script src="/static/JS/intro.min.js"></script>
     <script src="/static/JS/learningName.js"></script>
+    
+    <script>
+        // Initialize camera when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, initializing camera for learningName.js");
+            
+            // Initialize camera after a brief delay
+            setTimeout(function() {
+                if (typeof initCamera === 'function') {
+                    initCamera();
+                    console.log("Camera initialization called");
+                } else {
+                    console.error("Camera handler not loaded properly");
+                    document.getElementById('predictionText').textContent = "Camera handler not available";
+                }
+            }, 500);
+        });
+    </script>
 </body>
 </html>

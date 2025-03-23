@@ -1,5 +1,7 @@
 let recognizedLetters = [];
 let currentIndex = 0; // Variable to track the current match position
+let cameraInitialized = false; // Track camera initialization status
+let predictionInterval = null; // Store the interval ID
 
 function resetImagesOpacity() {
     const imagesContainer = document.querySelector('.images');
@@ -39,6 +41,10 @@ function getLettersFromImages(predictedLetter) {
                     recognizedLetters.push(letter); // Add to the array of recognized letters
                     currentIndex++; // Move to the next letter
                     updateImageStyles(); // Update the styles of the images
+                    
+                    // Play a success sound
+                    playSuccessSound();
+                    
                     break; // Exit the loop
                 }
             } else if (i === currentIndex) {
@@ -51,53 +57,104 @@ function getLettersFromImages(predictedLetter) {
     }
 }
 
+// Function to play a success sound
+function playSuccessSound() {
+    try {
+        const audio = new Audio('/static/sounds/success.mp3');
+        audio.volume = 0.2; // Set volume to 20%
+        audio.play().catch(e => console.log('Sound play failed:', e));
+    } catch (e) {
+        console.log('Sound not supported:', e);
+    }
+}
+
 function predict() {
-    // Use the client-side camera instead of server-side
-    if (typeof sendImageForPrediction === 'function') {
-        console.log("Sending image for prediction in learningName.js...");
+    // Only proceed if camera is initialized
+    if (!cameraInitialized) {
+        console.log("Camera not initialized yet for prediction");
+        document.getElementById('predictionText').textContent = " Camera initializing...";
+        return;
+    }
+    
+    // Get the video and canvas elements
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas') || document.createElement('canvas');
+    
+    if (!canvas.id) {
+        canvas.id = 'canvas';
+        canvas.style.display = 'none';
+        document.body.appendChild(canvas);
+    }
+    
+    // Use the optimized image capture function from camera-handler.js
+    captureImage(video, canvas, function(captureResult) {
+        if (captureResult.error) {
+            console.error("Error capturing image for prediction:", captureResult.message);
+            document.getElementById('predictionText').textContent = ` Error: ${captureResult.message}`;
+            return;
+        }
         
-        sendImageForPrediction()
-            .then(data => {
-                console.log("Prediction response received:", data);
+        // Send the optimized image to server for prediction
+        sendImageForPrediction(captureResult.image, '/predict_image', function(data) {
+            console.log("Prediction response received:", data);
+            
+            if (data.status === 'success') {
+                // Update the prediction text
+                const predictedLetter = data.prediction;
+                const confidence = data.confidence || 0;
+                console.log(`Prediction successful: "${predictedLetter}" (confidence: ${confidence.toFixed(2)})`);
                 
-                if (data.status === 'success') {
-                    // Update the prediction text
-                    const predictedLetter = data.prediction;
-                    console.log(`Prediction successful: "${predictedLetter}"`);
-                    document.getElementById('predictionText').textContent = ` ${predictedLetter}`;
-                    
+                // Format display based on confidence
+                let confidenceDisplay = '';
+                let textColor = '';
+                
+                if (confidence >= 0.7) {
+                    // High confidence
+                    confidenceDisplay = `${predictedLetter}`;
+                    textColor = '#00aa00'; // green
+                } else if (confidence >= 0.4) {
+                    // Medium confidence
+                    confidenceDisplay = `${predictedLetter}`;
+                    textColor = '#ff9900'; // orange
+                } else if (predictedLetter !== 'No hand detected') {
+                    // Low confidence but hand detected
+                    confidenceDisplay = `${predictedLetter} (low confidence)`;
+                    textColor = '#999999'; // gray
+                } else {
+                    // No hand detected
+                    confidenceDisplay = 'No hand detected';
+                    textColor = '#666666'; // dark gray
+                }
+                
+                // Update the prediction display
+                const predictionText = document.getElementById('predictionText');
+                predictionText.textContent = ` ${confidenceDisplay}`;
+                predictionText.style.color = textColor;
+                
+                // Only process predictions with reasonable confidence
+                if (predictedLetter && predictedLetter !== 'No hand detected' && confidence >= 0.4) {
                     // Call the function that updates the images based on the prediction
                     getLettersFromImages(predictedLetter);
-                } else if (data.status === 'loading') {
-                    console.log("Model is still loading");
-                    document.getElementById('predictionText').textContent = ' Model is loading...';
-                } else {
-                    // Handle MediaPipe timestamp errors specifically
-                    if (data.message && data.message.includes("Packet timestamp mismatch")) {
-                        console.warn("MediaPipe timestamp error detected - will retry automatically");
-                        document.getElementById('predictionText').textContent = ' Detecting...';
-                        // The server will handle the MediaPipe reinit - no need to do anything special here
-                    } else {
-                        console.error("Prediction error:", data.message);
-                        document.getElementById('predictionText').textContent = ` Error: ${data.message || 'Unknown error'}`;
-                    }
                 }
-            })
-            .catch(error => {
-                console.error('Error in prediction:', error);
-                // Check if the error might be related to MediaPipe timestamps
-                if (error.message && error.message.includes("Packet timestamp mismatch")) {
-                    document.getElementById('predictionText').textContent = ' Retrying...';
-                    // Wait a moment and try again
-                    setTimeout(predict, 1000);
+            } else if (data.status === 'loading') {
+                console.log("Model is still loading");
+                document.getElementById('predictionText').textContent = ' Model is loading...';
+                document.getElementById('predictionText').style.color = '';
+            } else {
+                // Handle MediaPipe timestamp errors specifically
+                if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                    console.warn("MediaPipe timestamp error detected - will retry automatically");
+                    document.getElementById('predictionText').textContent = ' Detecting...';
+                    document.getElementById('predictionText').style.color = '';
+                    // The server will handle the MediaPipe reinit - no need to do anything special here
                 } else {
-                    document.getElementById('predictionText').textContent = ' Error requesting prediction';
+                    console.error("Prediction error:", data.message);
+                    document.getElementById('predictionText').textContent = ` Error: ${data.message || 'Unknown error'}`;
+                    document.getElementById('predictionText').style.color = '#ff0000';
                 }
-            });
-    } else {
-        console.error('Camera handler not loaded properly');
-        document.getElementById('predictionText').textContent = ' Camera unavailable';
-    }
+            }
+        });
+    });
 }
 
 function updateImageStyles() {
@@ -120,15 +177,40 @@ function updateImageStyles() {
     }
 }
 
-// Activate the prediction function every 1.5 seconds
-let predictionInterval = null;
-
 // Start prediction when the page is loaded and the camera is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait a bit for the camera to initialize
-    setTimeout(function() {
-        predictionInterval = setInterval(predict, 1500);
-    }, 2000);
+    console.log("DOM loaded in learningName.js");
+    
+    // Set up camera state change monitoring
+    const videoElement = document.getElementById('webcam');
+    if (videoElement) {
+        // Listen for video element to become ready
+        videoElement.addEventListener('loadedmetadata', function() {
+            console.log("Video element loaded metadata, camera ready");
+            cameraInitialized = true;
+            
+            // Start prediction interval only after camera is confirmed ready
+            if (predictionInterval) {
+                clearInterval(predictionInterval);
+            }
+            
+            predictionInterval = setInterval(predict, 1500);
+            console.log("Prediction interval started");
+            
+            // Update UI to show camera is ready
+            document.getElementById('predictionText').textContent = "Camera ready - make a sign";
+            
+            // Hide the status message after it's ready
+            const statusDiv = document.getElementById('cameraStatus');
+            if (statusDiv) {
+                statusDiv.innerText = "Camera ready";
+                statusDiv.className = 'status success';
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 1500);
+            }
+        });
+    }
 });
 
 function startIntro() {
