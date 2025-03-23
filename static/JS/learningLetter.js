@@ -16,52 +16,84 @@ let predictionInterval = null; // Store the interval ID
 
 // Function to perform the prediction using client-side camera
 function predict() {
-    // Use the sendImageForPrediction function from camera-handler.js
-    if (typeof sendImageForPrediction === 'function') {
-        console.log("Sending image for prediction...");
-        
-        sendImageForPrediction()
-            .then(data => {
-                console.log("Prediction response received:", data);
-                
-                if (data.status === 'success') {
-                    console.log(`Prediction successful: "${data.prediction}"`);
-                    document.getElementById('predictionText').textContent = ` ${data.prediction}`;
-
-                    // If there is a selected image, start checking the match
-                    if (selectedImage) {
-                        checkPrediction(data.prediction);
-                    }
-                } else if (data.status === 'loading') {
-                    console.log("Model is still loading");
-                    document.getElementById('predictionText').textContent = ' Model is loading...';
-                } else {
-                    // Handle MediaPipe timestamp errors specifically
-                    if (data.message && data.message.includes("Packet timestamp mismatch")) {
-                        console.warn("MediaPipe timestamp error detected - will retry automatically");
-                        document.getElementById('predictionText').textContent = ' Detecting...';
-                        // The server will handle the MediaPipe reinit - no need to do anything special here
-                    } else {
-                        console.error("Prediction error:", data.message);
-                        document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error("Error in prediction:", error);
-                // Check if the error might be related to MediaPipe timestamps
-                if (error.message && error.message.includes("Packet timestamp mismatch")) {
-                    document.getElementById('predictionText').textContent = ' Retrying...';
-                    // Wait a moment and try again
-                    setTimeout(predict, 1000);
-                } else {
-                    document.getElementById('predictionText').textContent = ' Error requesting prediction';
-                }
-            });
-    } else {
-        console.error('Camera handler not loaded properly');
-        document.getElementById('predictionText').textContent = ' Camera unavailable';
+    // Get the video and canvas elements
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas') || document.createElement('canvas');
+    
+    if (!canvas.id) {
+        canvas.id = 'canvas';
+        canvas.style.display = 'none';
+        document.body.appendChild(canvas);
     }
+    
+    // Use the optimized image capture function from camera-handler.js
+    captureImage(video, canvas, function(captureResult) {
+        if (captureResult.error) {
+            console.error("Error capturing image for prediction:", captureResult.message);
+            document.getElementById('predictionText').textContent = ` Error: ${captureResult.message}`;
+            return;
+        }
+        
+        // Send the optimized image to server for prediction
+        sendImageForPrediction(captureResult.image, '/predict_image', function(data) {
+            console.log("Prediction response received:", data);
+            
+            if (data.status === 'success') {
+                const prediction = data.prediction;
+                const confidence = data.confidence || 0;
+                console.log(`Prediction successful: "${prediction}" (confidence: ${confidence.toFixed(2)})`);
+                
+                // Format display based on confidence
+                let confidenceDisplay = '';
+                let textColor = '';
+                
+                if (confidence >= 0.7) {
+                    // High confidence
+                    confidenceDisplay = `${prediction}`;
+                    textColor = '#00aa00'; // green
+                } else if (confidence >= 0.4) {
+                    // Medium confidence
+                    confidenceDisplay = `${prediction}`;
+                    textColor = '#ff9900'; // orange
+                } else if (prediction !== 'No hand detected') {
+                    // Low confidence but hand detected
+                    confidenceDisplay = `${prediction} (low confidence)`;
+                    textColor = '#999999'; // gray
+                } else {
+                    // No hand detected
+                    confidenceDisplay = 'No hand detected';
+                    textColor = '#666666'; // dark gray
+                }
+                
+                // Update the prediction display
+                const predictionText = document.getElementById('predictionText');
+                predictionText.textContent = ` ${confidenceDisplay}`;
+                predictionText.style.color = textColor;
+                
+                // If there is a selected image, start checking the match
+                // Only consider as a match if confidence is reasonable
+                if (selectedImage && confidence >= 0.4) {
+                    checkPrediction(prediction);
+                }
+            } else if (data.status === 'loading') {
+                console.log("Model is still loading");
+                document.getElementById('predictionText').textContent = ' Model is loading...';
+                document.getElementById('predictionText').style.color = '';
+            } else {
+                // Handle MediaPipe timestamp errors specifically
+                if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                    console.warn("MediaPipe timestamp error detected - will retry automatically");
+                    document.getElementById('predictionText').textContent = ' Detecting...';
+                    document.getElementById('predictionText').style.color = '';
+                    // The server will handle the MediaPipe reinit - no need to do anything special here
+                } else {
+                    console.error("Prediction error:", data.message);
+                    document.getElementById('predictionText').textContent = ` ${data.message || 'Error'}`;
+                    document.getElementById('predictionText').style.color = '#ff0000';
+                }
+            }
+        });
+    });
 }
 
 // Function to update the timer

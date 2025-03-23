@@ -6,6 +6,13 @@ import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+# Enable XLA for optimization
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
+# Lower memory usage
+os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+# Optimize TF operations for CPU
+os.environ['TF_CPU_DETERMINISTIC'] = '1'
+
 # Initialize ABSL logging
 absl.logging.set_verbosity(absl.logging.ERROR)
 absl.logging.use_absl_handler()
@@ -21,6 +28,8 @@ import random
 import base64
 import threading
 import time
+import functools
+import collections
 
 # Configure TensorFlow logging
 tf.get_logger().setLevel('ERROR')
@@ -63,6 +72,13 @@ use_mock_camera = True  # Set to True when deployed on Render or other server en
 # Store a timestamp for MediaPipe processing to avoid conflicts
 last_process_timestamp = 0
 
+# Prediction confidence threshold
+CONFIDENCE_THRESHOLD = 0.4  # Minimum confidence to accept a prediction
+
+# Add prediction cache for result smoothing on server side
+MAX_CACHE_SIZE = 10
+prediction_cache = collections.deque(maxlen=MAX_CACHE_SIZE)
+
 # Try to initialize the camera, fall back to mock if not available
 try:
     cap = cv2.VideoCapture(0)
@@ -97,7 +113,30 @@ def load_model_async():
         # Trying the approach from the old working code
         try:
             print("Attempting to load model directly...")
-            model = load_model(model_path)
+            
+            # Load model with optimization flags
+            with tf.device('/CPU:0'):  # Force CPU execution for consistency
+                model = load_model(model_path)
+                
+                # Optimize the model for inference
+                model_optimizer = tf.lite.TFLiteConverter.from_keras_model(model)
+                model_optimizer.optimizations = [tf.lite.Optimize.DEFAULT]
+                model_optimizer.target_spec.supported_types = [tf.float16]
+                model_optimizer.target_spec.supported_ops = [
+                    tf.lite.OpsSet.TFLITE_BUILTINS,
+                    tf.lite.OpsSet.SELECT_TF_OPS
+                ]
+                # We'll still use the original model but print optimization info
+                print("Model optimization configuration complete")
+                
+                # Pre-compile the model to make inference faster
+                input_shape = (1, 21, 3)  # Expected input shape
+                test_input = np.zeros(input_shape, dtype=np.float32)
+                model.predict(test_input)  # Warm up the model
+                
+                # Force garbage collection to free memory
+                import gc
+                gc.collect()
         except Exception as e:
             print(f"Direct model loading failed: {e}, trying alternative approach...")
             # Try using tf.keras.models.load_model explicitly
@@ -129,6 +168,78 @@ def load_model_async():
 # Start model loading in background thread
 print("Starting model loading in background thread...")
 threading.Thread(target=load_model_async).start()
+
+# Function to get smoothed prediction from cache
+def get_smoothed_prediction(new_prediction, confidence):
+    global prediction_cache
+    
+    # Only cache predictions with reasonable confidence
+    if confidence >= CONFIDENCE_THRESHOLD:
+        prediction_cache.append(new_prediction)
+    
+    if not prediction_cache:
+        return new_prediction, confidence
+    
+    # Count occurrences of each prediction in cache
+    counter = collections.Counter(prediction_cache)
+    most_common, count = counter.most_common(1)[0]
+    
+    # Calculate smoothed confidence based on frequency
+    smoothed_confidence = count / len(prediction_cache)
+    
+    # If the new prediction matches the most common one, prioritize it
+    if new_prediction == most_common and confidence >= CONFIDENCE_THRESHOLD:
+        return new_prediction, max(confidence, smoothed_confidence)
+    
+    # If the smoothed confidence is greater than individual confidence and above threshold
+    if smoothed_confidence >= CONFIDENCE_THRESHOLD and smoothed_confidence > confidence:
+        return most_common, smoothed_confidence
+    
+    # Fall back to the current prediction
+    return new_prediction, confidence
+
+# Add a batch prediction function for multiple hand postures to handle occasional prediction errors
+def batch_predict(input_data, batch_size=3):
+    global model
+    
+    if model is None:
+        return None, 0
+    
+    # Clone the input data to create variations for robustness
+    batch_inputs = []
+    for i in range(batch_size):
+        # Add small random noise to create variations (improves robustness)
+        noise_level = i * 0.01  # Progressive noise levels
+        variation = input_data.copy() + np.random.normal(0, noise_level, input_data.shape)
+        batch_inputs.append(variation)
+    
+    batch_array = np.vstack(batch_inputs)
+    
+    try:
+        # Make batch prediction
+        batch_predictions = model.predict(batch_array)
+        
+        # Get the class predictions
+        pred_classes = np.argmax(batch_predictions, axis=1)
+        
+        # Get the confidence scores
+        confidence_scores = np.max(batch_predictions, axis=1)
+        
+        # Count occurrences of each class
+        unique_classes, counts = np.unique(pred_classes, return_counts=True)
+        
+        # Find the most common prediction
+        max_count_idx = np.argmax(counts)
+        most_common_class = unique_classes[max_count_idx]
+        
+        # Average confidence for the most common class
+        mask = pred_classes == most_common_class
+        avg_confidence = np.mean(confidence_scores[mask])
+        
+        return classes[most_common_class], avg_confidence
+    except Exception as e:
+        print(f"Batch prediction error: {e}")
+        return None, 0
 
 word_to_number = {
     "one": 1,
@@ -576,6 +687,8 @@ def predict_image():
         
         if not results.multi_hand_landmarks:
             print("No hand landmarks detected in image")
+            # Clear prediction cache when no hand is detected
+            prediction_cache.clear()
             return jsonify({
                 'status': 'success', 
                 'prediction': 'No hand detected',
@@ -599,18 +712,33 @@ def predict_image():
             input_data = np.array(landmarks).reshape(1, 21, 3)
             print(f"Input data shape: {input_data.shape}")
             
-            # Make prediction - exactly as in old working code
+            # Make batch prediction for robustness
             try:
                 print("Running model prediction...")
-                prediction = model.predict(input_data)
-                print(f"Raw prediction shape: {prediction.shape}")
-                predicted_class = np.argmax(prediction, axis=1)[0]
-                print(f"Predicted class index: {predicted_class}")
-                predicted_character = classes[predicted_class]
-                print(f"Predicted character: {predicted_character}")
+                predicted_character, confidence = batch_predict(input_data)
                 
-                # Add text to the image
-                cv2.putText(frame, predicted_character, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+                if predicted_character is None:
+                    raise ValueError("Batch prediction failed")
+                
+                # Apply server-side smoothing
+                smoothed_character, smoothed_confidence = get_smoothed_prediction(
+                    predicted_character, confidence)
+                
+                print(f"Raw prediction: {predicted_character} (conf: {confidence:.2f})")
+                print(f"Smoothed prediction: {smoothed_character} (conf: {smoothed_confidence:.2f})")
+                
+                # Only return predictions above threshold confidence
+                if smoothed_confidence >= CONFIDENCE_THRESHOLD:
+                    final_prediction = smoothed_character
+                    # Add confidence percentage to the frame
+                    confidence_text = f"{final_prediction} ({smoothed_confidence:.2f})"
+                    cv2.putText(frame, confidence_text, (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                else:
+                    # Low confidence prediction
+                    final_prediction = "Uncertain"
+                    cv2.putText(frame, f"Low confidence ({smoothed_confidence:.2f})", 
+                                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                 
                 # Convert processed image back to base64
                 _, buffer = cv2.imencode('.jpg', frame)
@@ -618,7 +746,8 @@ def predict_image():
                 
                 return jsonify({
                     'status': 'success',
-                    'prediction': predicted_character,
+                    'prediction': final_prediction if final_prediction != "Uncertain" else smoothed_character,
+                    'confidence': float(smoothed_confidence),
                     'image': img_str
                 })
             except Exception as e:

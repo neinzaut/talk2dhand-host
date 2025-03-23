@@ -198,21 +198,109 @@ function createStatusElement() {
     return statusDiv;
 }
 
-// Capture an image from the video stream
-function captureImage() {
-    if (!streamStarted) {
-        updateStatus('Camera not started', 'error');
-        return null;
+// Function to capture image from MediaPipe canvas or video element
+function captureImage(videoElement, canvasElement, callback) {
+    if (!videoElement || videoElement.readyState !== 4) {
+        console.error("Video element not ready");
+        return callback({ 
+            error: true, 
+            message: "Video element not ready" 
+        });
     }
-    
-    if (mediaPipeInitialized) {
-        // Use existing canvas with hand landmarks
-        return canvasElement.toDataURL('image/jpeg');
-    } else {
-        // Draw the current video frame to the canvas
-        canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-        // Convert canvas to data URL (base64 encoded image)
-        return canvasElement.toDataURL('image/jpeg');
+
+    try {
+        // Get canvas context
+        const mpCanvas = document.getElementById('output_canvas');
+        const ctx = canvasElement.getContext('2d');
+
+        // Set canvas dimensions to match video
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+        // Draw from MediaPipe canvas if available, otherwise from video
+        if (mpCanvas) {
+            console.log("Drawing from MediaPipe canvas");
+            ctx.drawImage(mpCanvas, 0, 0, canvasElement.width, canvasElement.height);
+        } else {
+            console.log("Drawing directly from video element");
+            ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+        }
+
+        // Create a temporary canvas for resizing
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Set to reduced resolution (240x180 instead of 320x240)
+        const targetWidth = 240;
+        const targetHeight = 180;
+        tempCanvas.width = targetWidth;
+        tempCanvas.height = targetHeight;
+        
+        // Draw the original canvas to the temp canvas (resizing in the process)
+        tempCtx.drawImage(canvasElement, 0, 0, canvasElement.width, canvasElement.height, 
+                          0, 0, targetWidth, targetHeight);
+        
+        // Get image data with lower quality JPEG encoding
+        const imageData = tempCanvas.toDataURL('image/jpeg', 0.8); // 80% quality
+        
+        // Log the size
+        const base64Data = imageData.split(',')[1];
+        console.log(`Optimized image size: ${base64Data.length} bytes`);
+        
+        // Remove the data URL prefix to get just the base64 data
+        callback({ 
+            success: true, 
+            image: base64Data, 
+            width: targetWidth,
+            height: targetHeight,
+            originalWidth: canvasElement.width,
+            originalHeight: canvasElement.height
+        });
+    } catch (error) {
+        console.error("Error capturing image:", error);
+        callback({ 
+            error: true, 
+            message: error.message 
+        });
+    }
+}
+
+// Function to send image to server for prediction
+function sendImageForPrediction(imageData, endpoint, callback) {
+    try {
+        // Make the fetch request to the server
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            callback(data);
+        })
+        .catch(error => {
+            console.error("Error in fetch:", error);
+            callback({ 
+                status: 'error',
+                message: error.message
+            });
+        });
+    } catch (error) {
+        console.error("Error sending image:", error);
+        callback({ 
+            status: 'error',
+            message: error.message
+        });
     }
 }
 
@@ -317,73 +405,6 @@ function startManualMediaPipeProcessing() {
     };
     
     requestAnimationFrame(processFrame);
-}
-
-// Send the current camera image to the server for prediction
-function sendImageForPrediction() {
-    return new Promise((resolve, reject) => {
-        // Check if camera is running
-        if (!streamStarted) {
-            console.error('Camera not started');
-            reject(new Error('Camera not started'));
-            return;
-        }
-        
-        try {
-            // Capture the current image from the camera
-            const imageData = captureImage();
-            
-            if (!imageData) {
-                console.error('Failed to capture image');
-                reject(new Error('Failed to capture image'));
-                return;
-            }
-            
-            // Extract the base64 data part of the data URL
-            const base64Data = imageData.split(',')[1];
-            
-            // Send the image data to the server for prediction
-            fetch('/predict_image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: base64Data })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // For MediaPipe timestamp errors, we can retry the request automatically
-                if (data.status === 'error' && 
-                    data.message && 
-                    data.message.includes("Packet timestamp mismatch")) {
-                    
-                    console.warn("MediaPipe timestamp error detected in camera-handler - retrying in 500ms");
-                    
-                    // Wait a short time and try again
-                    setTimeout(() => {
-                        sendImageForPrediction()
-                            .then(retryData => resolve(retryData))
-                            .catch(retryError => reject(retryError));
-                    }, 500);
-                } else {
-                    // Return the prediction data
-                    resolve(data);
-                }
-            })
-            .catch(error => {
-                console.error('Error sending image for prediction:', error);
-                reject(error);
-            });
-        } catch (error) {
-            console.error('Error capturing image:', error);
-            reject(error);
-        }
-    });
 }
 
 // Stop the camera stream

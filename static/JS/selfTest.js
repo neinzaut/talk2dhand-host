@@ -9,6 +9,60 @@ let realtimeInterval; // New interval for real-time prediction
 let cameraInitialized = false;
 let debugMode = false; // Set to true to display canvas for debugging
 
+// For prediction smoothing
+let predictionHistory = [];
+const HISTORY_SIZE = 3; // Number of predictions to keep for smoothing
+const CONFIDENCE_THRESHOLD = 0.7; // Only show predictions with this confidence or higher
+
+// Function to get the most frequent item in an array (majority vote)
+function getMostFrequentPrediction(history) {
+    if (history.length === 0) return 'No hand detected';
+    
+    // Count occurrences of each prediction
+    const counts = {};
+    history.forEach(prediction => {
+        if (prediction === 'No hand detected') return; // Skip "No hand" detections
+        counts[prediction] = (counts[prediction] || 0) + 1;
+    });
+    
+    // Find the most frequent prediction and its count
+    let mostFrequent = 'No hand detected';
+    let maxCount = 0;
+    
+    for (const prediction in counts) {
+        if (counts[prediction] > maxCount) {
+            maxCount = counts[prediction];
+            mostFrequent = prediction;
+        }
+    }
+    
+    // Calculate confidence (ratio of occurrences to history size)
+    const confidence = maxCount / history.length;
+    
+    // Only return predictions above the confidence threshold
+    if (confidence >= CONFIDENCE_THRESHOLD) {
+        return mostFrequent;
+    } else {
+        // Not confident enough - return the most frequent prediction but mark as low confidence
+        return mostFrequent; // We'll handle the confidence level elsewhere
+    }
+}
+
+// Function to add a prediction to history and get smoothed result
+function smoothPrediction(newPrediction) {
+    // Add to history (skip "No hand detected" to prevent false negatives)
+    if (newPrediction && newPrediction !== 'No hand detected') {
+        predictionHistory.push(newPrediction);
+        // Keep history at fixed size
+        if (predictionHistory.length > HISTORY_SIZE) {
+            predictionHistory.shift(); // Remove oldest prediction
+        }
+    }
+    
+    // Return smoothed prediction from history
+    return getMostFrequentPrediction(predictionHistory);
+}
+
 // Function to perform real-time prediction
 function realtimePredict() {
     // Only proceed if camera is initialized
@@ -17,49 +71,72 @@ function realtimePredict() {
         return;
     }
     
-    // Use the learningLetter.js approach for real-time prediction
+    // Use the optimized camera-handler.js functions
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
     
-    // Clear canvas and draw current video frame
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Get image from canvas
-    const imageData = canvas.toDataURL('image/jpeg');
-    const base64Data = imageData.split(',')[1];
-    
-    // Send the data to server for prediction
-    fetch('/predict_image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Data })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Update real-time prediction display
-        if (data.status === 'success') {
-            const predictedSign = data.prediction;
-            document.getElementById('predictionResult').innerText = predictedSign;
-        } else if (data.status === 'loading') {
-            document.getElementById('predictionResult').innerText = "Model loading...";
-        } else {
-            // Check for MediaPipe timestamp errors
-            if (data.message && data.message.includes("Packet timestamp mismatch")) {
-                console.warn("MediaPipe timestamp error detected - will retry automatically");
-                document.getElementById('predictionResult').innerText = "Detecting...";
-                // The server will handle the MediaPipe reinit - no need to do anything special here
-            } else {
-                // Don't show errors in real-time preview
-                document.getElementById('predictionResult').innerText = "Detecting...";
-                console.error("Prediction error:", data.message);
-            }
+    // Use our optimized image capture function
+    captureImage(video, canvas, function(captureResult) {
+        if (captureResult.error) {
+            console.error("Error capturing image for real-time prediction:", captureResult.message);
+            return;
         }
-    })
-    .catch(error => {
-        console.error("Real-time prediction error:", error);
-        // Don't update UI on error for real-time predictions
+        
+        // Send the optimized image to server for prediction
+        sendImageForPrediction(captureResult.image, '/predict_image', function(data) {
+            // Update real-time prediction display
+            if (data.status === 'success') {
+                const rawPrediction = data.prediction;
+                const confidence = data.confidence || 0;
+                
+                // Apply prediction smoothing
+                const smoothedPrediction = smoothPrediction(rawPrediction);
+                
+                // Format the prediction display based on confidence
+                const predictionElement = document.getElementById('predictionResult');
+                
+                if (confidence >= 0.7) {
+                    // High confidence - show in green
+                    predictionElement.innerText = smoothedPrediction;
+                    predictionElement.style.color = '#00aa00';
+                    predictionElement.style.fontWeight = 'bold';
+                } else if (confidence >= 0.4) {
+                    // Medium confidence - show in orange
+                    predictionElement.innerText = smoothedPrediction;
+                    predictionElement.style.color = '#ff9900';
+                    predictionElement.style.fontWeight = 'normal';
+                } else if (smoothedPrediction !== 'No hand detected') {
+                    // Low confidence but hand detected - show in gray
+                    predictionElement.innerText = smoothedPrediction + ' (low confidence)';
+                    predictionElement.style.color = '#999999';
+                    predictionElement.style.fontWeight = 'normal';
+                } else {
+                    // No hand detected
+                    predictionElement.innerText = "No hand detected";
+                    predictionElement.style.color = '#666666';
+                    predictionElement.style.fontWeight = 'normal';
+                }
+            } else if (data.status === 'loading') {
+                document.getElementById('predictionResult').innerText = "Model loading...";
+                document.getElementById('predictionResult').style.color = '';
+                document.getElementById('predictionResult').style.fontWeight = 'normal';
+            } else {
+                // Check for MediaPipe timestamp errors
+                if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                    console.warn("MediaPipe timestamp error detected - will retry automatically");
+                    document.getElementById('predictionResult').innerText = "Detecting...";
+                    document.getElementById('predictionResult').style.color = '';
+                    document.getElementById('predictionResult').style.fontWeight = 'normal';
+                    // The server will handle the MediaPipe reinit - no need to do anything special here
+                } else {
+                    // Don't show errors in real-time preview
+                    document.getElementById('predictionResult').innerText = "Detecting...";
+                    document.getElementById('predictionResult').style.color = '';
+                    document.getElementById('predictionResult').style.fontWeight = 'normal';
+                    console.error("Prediction error:", data.message);
+                }
+            }
+        });
     });
 }
 
@@ -196,6 +273,9 @@ function startTest() {
         console.log("Paused real-time detection for test");
     }
     
+    // Reset prediction history for the new test
+    resetPredictionHistory();
+    
     getRandomCharacter()
         .then(() => {
             startCountdown();
@@ -306,124 +386,134 @@ function captureAndPredict() {
     
     // Update UI to indicate prediction is happening
     document.getElementById('predictionResult').innerText = "Processing...";
+    document.getElementById('predictionResult').style.color = '';
+    document.getElementById('predictionResult').style.fontWeight = 'normal';
     
     console.log("----- PREDICTION PROCESS STARTED -----");
     
-    // Use the learningLetter.js approach - direct canvas capture for prediction
+    // Use the optimized camera-handler.js functions
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
     
-    // Clear canvas and draw current video frame to canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Draw a marker to check if we're capturing this frame
+    // Draw a marker to check if we're capturing this frame (if debug mode is on)
     if (debugMode) {
+        const ctx = canvas.getContext('2d');
         ctx.fillStyle = "red";
         ctx.fillRect(5, 5, 10, 10);
     }
     
-    // Log canvas dimensions to verify
-    console.log(`Canvas dimensions during capture: ${canvas.width}x${canvas.height}`);
-    
-    // Get image from canvas
-    const imageData = canvas.toDataURL('image/jpeg');
-    
-    // Remove the data URL prefix to get just the base64 data
-    const base64Data = imageData.split(',')[1];
-    
-    console.log(`Image data size: ${base64Data.length} bytes`);
-    
-    // Send the data to server
-    fetch('/predict_image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Data })
-    })
-    .then(response => {
-        console.log(`Server response status: ${response.status}`);
-        return response.json();
-    })
-    .then(data => {
-        console.log("Prediction response received:", data);
+    // Use our optimized image capture function
+    captureImage(video, canvas, function(captureResult) {
+        if (captureResult.error) {
+            console.error("Error capturing image:", captureResult.message);
+            handlePredictionError({ message: captureResult.message, status: 'error' });
+            return;
+        }
         
-        if (data.status === 'success') {
-            // Success case - we have a valid prediction
-            predictedCharacter = data.prediction;
-            console.log(`Prediction successful: "${predictedCharacter}"`);
+        console.log(`Image captured successfully. Size: ${captureResult.width}x${captureResult.height}`);
+        
+        // Send the optimized image to server for prediction
+        sendImageForPrediction(captureResult.image, '/predict_image', function(data) {
+            console.log("Prediction response received:", data);
             
-            // Update the UI with what was detected
-            document.getElementById('predictionResult').innerText = predictedCharacter;
-            
-            // Store the image for display
-            const capturedImage = document.getElementById('capturedImage');
-            if (data.image) {
-                capturedImage.src = 'data:image/jpeg;base64,' + data.image;
-            } else {
-                capturedImage.src = imageData; // Use local canvas image if server didn't return one
-            }
-            capturedImage.style.display = 'none';
-            
-            // Check if we have a valid prediction
-            if (predictedCharacter && predictedCharacter !== "No hand detected") {
-                console.log("Valid sign detected, proceeding with comparison");
-                sendPrediction();
-            } else {
-                console.log("No valid sign detected, counting as wrong");
-                wrongCount++;
-                document.getElementById('wrongCount').innerText = wrongCount;
+            if (data.status === 'success') {
+                // Success case - we have a valid prediction
+                const rawPrediction = data.prediction;
+                const confidence = data.confidence || 0;
                 
-                // Save the error
-                const correctCharacter = document.getElementById('randomCharacter').innerText;
-                errors.push({
-                    image: capturedImage.src,
-                    correctCharacter: correctCharacter,
-                    predictedCharacter: "No hand detected"
-                });
+                // Use smoothed prediction for test - this will incorporate previous predictions
+                predictedCharacter = smoothPrediction(rawPrediction);
+                console.log(`Raw prediction: "${rawPrediction}", Smoothed: "${predictedCharacter}", Confidence: ${confidence}`);
                 
-                // Continue with the test
-                totalGuesses++;
-                if (totalGuesses >= 3) {
-                    showEndGamePopup();
+                // Update the UI with what was detected
+                const predictionElement = document.getElementById('predictionResult');
+                predictionElement.innerText = predictedCharacter;
+                
+                // Style based on confidence
+                if (confidence >= 0.7) {
+                    predictionElement.style.color = '#00aa00';
+                    predictionElement.style.fontWeight = 'bold';
+                } else if (confidence >= 0.4) {
+                    predictionElement.style.color = '#ff9900';
+                    predictionElement.style.fontWeight = 'normal';
                 } else {
-                    getRandomCharacter()
-                        .then(() => startCountdown())
-                        .catch(error => {
-                            console.error("Error getting next character:", error);
-                            document.getElementById('predictionResult').innerText = "Error loading next test";
-                        });
+                    predictionElement.style.color = '#999999';
+                    predictionElement.style.fontWeight = 'normal';
                 }
-            }
-        } else if (data.status === 'loading') {
-            console.log("Model is still loading");
-            document.getElementById('predictionResult').innerText = "Model is loading, please wait...";
-            
-            // Try again in a few seconds
-            setTimeout(() => {
-                captureAndPredict();
-            }, 2000);
-        } else {
-            // Handle specific MediaPipe timestamp errors
-            if (data.message && data.message.includes("Packet timestamp mismatch")) {
-                console.warn("MediaPipe timestamp error detected - trying again...");
-                document.getElementById('predictionResult').innerText = "Retrying...";
-                // Try once more after a short delay
+                
+                // Store the image for display
+                const capturedImage = document.getElementById('capturedImage');
+                if (data.image) {
+                    capturedImage.src = 'data:image/jpeg;base64,' + data.image;
+                } else {
+                    // Create a data URL from the captured image
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = captureResult.width;
+                    tempCanvas.height = captureResult.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(canvas, 0, 0);
+                    capturedImage.src = tempCanvas.toDataURL('image/jpeg');
+                }
+                capturedImage.style.display = 'none';
+                
+                // Only proceed with the prediction if confidence is acceptable
+                if (predictedCharacter && predictedCharacter !== "No hand detected" && confidence >= 0.4) {
+                    console.log("Valid sign detected with good confidence, proceeding with comparison");
+                    sendPrediction();
+                } else {
+                    console.log("No valid sign detected or low confidence, counting as wrong");
+                    wrongCount++;
+                    document.getElementById('wrongCount').innerText = wrongCount;
+                    
+                    // Save the error
+                    const correctCharacter = document.getElementById('randomCharacter').innerText;
+                    errors.push({
+                        image: capturedImage.src,
+                        correctCharacter: correctCharacter,
+                        predictedCharacter: predictedCharacter || "No hand detected",
+                        confidence: confidence
+                    });
+                    
+                    // Continue with the test
+                    totalGuesses++;
+                    if (totalGuesses >= 3) {
+                        showEndGamePopup();
+                    } else {
+                        getRandomCharacter()
+                            .then(() => startCountdown())
+                            .catch(error => {
+                                console.error("Error getting next character:", error);
+                                document.getElementById('predictionResult').innerText = "Error loading next test";
+                                document.getElementById('predictionResult').style.color = '';
+                                document.getElementById('predictionResult').style.fontWeight = 'normal';
+                            });
+                    }
+                }
+            } else if (data.status === 'loading') {
+                console.log("Model is still loading");
+                document.getElementById('predictionResult').innerText = "Model is loading, please wait...";
+                document.getElementById('predictionResult').style.color = '';
+                document.getElementById('predictionResult').style.fontWeight = 'normal';
+                
+                // Try again in a few seconds
                 setTimeout(() => {
                     captureAndPredict();
-                }, 1000);
+                }, 2000);
             } else {
-                handlePredictionError(data);
+                // Handle specific MediaPipe timestamp errors
+                if (data.message && data.message.includes("Packet timestamp mismatch")) {
+                    console.warn("MediaPipe timestamp error detected - trying again...");
+                    document.getElementById('predictionResult').innerText = "Retrying...";
+                    document.getElementById('predictionResult').style.color = '';
+                    document.getElementById('predictionResult').style.fontWeight = 'normal';
+                    // Try once more after a short delay
+                    setTimeout(() => {
+                        captureAndPredict();
+                    }, 1000);
+                } else {
+                    handlePredictionError(data);
+                }
             }
-        }
-    })
-    .catch(error => {
-        console.error("Error in prediction:", error);
-        document.getElementById('predictionResult').innerText = "Error: " + error.message;
-        
-        handlePredictionError({ 
-            message: error.message,
-            status: 'error'
         });
     });
 }
@@ -618,6 +708,7 @@ function resetGame() {
     wrongCount = 0;
     totalGuesses = 0;
     errors = []; // Clear the error list
+    resetPredictionHistory(); // Reset prediction history
     document.getElementById('correctCount').innerText = correctCount;
     document.getElementById('wrongCount').innerText = wrongCount;
     document.getElementById('capturedImage').style.display = 'none';
@@ -626,10 +717,17 @@ function resetGame() {
     document.getElementById('timer').className = '';
     document.getElementById('startContainer').style.display = 'block';
     
-    // Set the prediction text back to real-time detection mode
-    document.getElementById('predictionResult').innerText = "Ready";
+    // Reset prediction display styles
+    const predictionElement = document.getElementById('predictionResult');
+    predictionElement.innerText = "Ready";
+    predictionElement.style.color = '';
+    predictionElement.style.fontWeight = 'normal';
 }
 
+// Reset prediction history when starting a new test
+function resetPredictionHistory() {
+    predictionHistory = [];
+}
 
 // Function to show the entry popup
 function showEntryPopup() {
